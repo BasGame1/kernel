@@ -1,17 +1,19 @@
-# Screen makefile
-CC=gcc
+CC = gcc
 #CFLAGS =
+
 SRC = $(wildcard *.c)
 OBJECTS = $(SRC:.c=.o)
-COMBINED_OBJECTS = $(OUT_DIR)/$(notdir $(CURDIR)).o
+COMBINED_OBJECTS = $(OUT)/$(notdir $(CURDIR)).o
 
 all: $(COMBINED_OBJECTS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o out/$@
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(COMBINED_OBJECTS): $(OBJ)
+$(COMBINED_OBJECTS): $(OBJECTS)
 	$(CC) -r -o $@ $^
-	
+	rm -f $(OBJECTS)
+
 clean:
-     rm -rf $(OBJECTS) $(COMBINED_OBJECTS)
+	rm -f $(OBJECTS) $(COMBINED_OBJECTS)
+

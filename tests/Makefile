@@ -1,17 +1,16 @@
-# Tests makefile
-CC=gcc
+CC = gcc
 #CFLAGS =
+
 SRC = $(wildcard *.c)
 OBJECTS = $(SRC:.c=.o)
-COMBINED_OBJECTS = $(OUT_DIR)/$(notdir $(CURDIR)).o
+TARGET = tests
 
 all: $(COMBINED_OBJECTS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o out/$@
+	$(CC) $(CFLAGS) $< -o $(TARGET)
+	rm -f $(OBJECTS)
 
-$(COMBINED_OBJECTS): $(OBJ)
-	$(CC) -r -o $@ $^
-	
 clean:
-     rm -rf $(OBJECTS) $(COMBINED_OBJECTS)
+	rm -f $(OBJECTS) $(TARGET)
+
