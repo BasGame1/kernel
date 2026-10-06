@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 char* concat(char *hardcoded_text, char *reason)
 {
