@@ -6,3 +6,5 @@ _start:
        cli
    1:  hlt
        jmp 1b
+   ; Enable Machine Interrput Enable
+   mov mie 1
