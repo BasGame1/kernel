@@ -8,4 +8,6 @@
 #define CLINT_MTIME_LOW     ((volatile uint32_t *)(CLINT_BASE + 0xBFF8))
 #define CLINT_MTIME_HIGH    ((volatile uint32_t *)(CLINT_BASE + 0xBFFC))
 
+#define set_csrs(reg, bit) asm volatile("csrs " #reg ", %0" :: "r"(bit))
+
 #endif
