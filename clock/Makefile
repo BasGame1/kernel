@@ -1,5 +1,5 @@
-CC = gcc
-#CFLAGS =
+CC ?= gcc
+CFLAGS ?=
 
 SRC = $(wildcard *.c)
 OBJECTS = $(SRC:.c=.o)
@@ -11,9 +11,10 @@ all: $(COMBINED_OBJECTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(COMBINED_OBJECTS): $(OBJECTS)
-	$(CC) -r -o $@ $^
+	$(CC) $(CFLAGS) -nostdlib -r -o $@ $^
 	rm -f $(OBJECTS)
 
 clean:
 	rm -f $(OBJECTS) $(COMBINED_OBJECTS)
+
 
