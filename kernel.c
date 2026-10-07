@@ -14,11 +14,12 @@
 
 extern void kernel_init() {
 
-   // trap init
+   /* trap init */
    for(int i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
       exception_handlers[i] = unknown_error;
    }// for jump table
+   
    exception_handlers[2] = handle_illegal_instruction;
    exception_handlers[3] = handle_breakpoint;
    exception_handlers[5] = handle_load_access_error;
@@ -28,7 +29,10 @@ extern void kernel_init() {
    exception_handlers[13] = handle_store_page_error;
    exception_handlers[15] = handle_instruction_page_error;
    
-   // screen init
+   /* clock init */
+   init_mtimecmp();
+   
+   /* screen init */
    start_screen();
    print("Kernel Starting");
   //TODO, add calling processes and tbh, everything else
