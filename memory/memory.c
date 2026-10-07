@@ -15,12 +15,34 @@ uintptr_t next_block;
 uintptr_t *head = 0;
 uintptr_t *actual_page;
 
-uintptr_t get_end_of_memory() {
-   uintptr_t value;
-   asm volatile("mv %0, t0" : "=r"(value));
-   return value;
-}// get_end_of_memory
+#ifdef __QEMU__
+  uintptr_t get_end_of_memory() {
+     return END_MEMORY;
+  }// get_end_of_memory
+#else
+  uintptr_t get_end_of_memory() {
+    uintptr_t probe_address = (uintptr_t)&_end;
+    const uintptr_t step = 1024 * 1024 * 4;
+    const uint32_t pattern = 0xAA55AA55;
+    while (probe_address < 0xFF000000) {
+       volatile uint32_t *ptr = (volatile uint32_t *)probe_address;
+       uint32_t original = *ptr;
+       *ptr = pattern;
+       if (*ptr != pattern) {
+          break;
+        }
+        *ptr = original;
+        probe_address += step;
+    }// while
+    return probe_address;
+  }// get_end_of_memory
 
+   uintptr_t get_end_of_memory() {
+      uintptr_t value;
+      asm volatile("mv %0, t0" : "=r"(value));
+      return value;
+   }// get_end_of_memory
+#endif
 void divide_memory(uintptr_t start, uintptr_t end) {
    /* If anyone reads this block I am sorry if you do not understand
     * The var names are horrible, but I could not come up with a better name

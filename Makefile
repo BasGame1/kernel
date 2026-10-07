@@ -15,6 +15,9 @@ GEN_LINKER = $(OUT)/kernel.ld
 
 all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
 
+qemu: CFLAGS += -D__QEMU__
+qemu: all
+
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
 $(OUT):
