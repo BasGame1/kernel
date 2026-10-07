@@ -1,6 +1,11 @@
 #ifndef __KERNEL_H
 #define __KERNEL_H
 
+#define uint64_t mtime
+#define uint64_t mtimemcp
+
+#define set_csrs(reg, bit) asm volatile("csrs " #reg ", %0" :: "r"(bit))
+
 extern void trap_vector();
 void trap_handler();
 void init_traps();
