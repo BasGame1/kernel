@@ -1,7 +1,8 @@
-#include <stdio.h>
 #include <string.h>
-#include "screen.c"
-#include "../utils/concat.c"
+#include "../include/screen.h"
+
+extern void print_character(char *message);
+extern char* concat(char *hardcoded_text, char *reason);
 
 // Status functions
 
