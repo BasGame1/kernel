@@ -1,39 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
+
 #include "../include/screen.h"
 
 void print_character(char *message) {
-   char *screen = (char *) SCREEN_ADR;
-   int message_size = sizeof(message);
-   for (int i = 0; i < message_size; i = i + 2) {
-      if (message[i] == '\n') {
-         position = MAX_COL;
-      } else {
-         position = i;
-      }// if for newline char
-      
-      screen[position] = message[i];
-
-      // TODO, change hardcoded style to a dynamically injected one
-      screen[position+1] = 0x1F;
-   }// for characters array 
+   volatile uint8_t *uart_status_pointer = (volatile uint8_t *) UART_STATUS;
+   volatile uint8_t *screen_address_pointer = (volatile uint8_t *) SCREEN_ADDRESS;
+   uint32_t i = 0;
+   while (message[i] != '\0') { 
+      while ((*uart_status_pointer & 0x20) == 0) {
+         // do not do anything, just wait
+      }// while check if uart is free   
+      *screen_address_pointer = message[i];
+      i++;
+   }// while to loop for every character
 }// print_character
 
 void clear_screen() {
-   for (int i = 0; i < MAX_COL; i++) { 
-       for (int n = 0; n < MAX_ROW; n++) { 
-          print_character('\0');
-       }// for rows
-   }// for columns 
-}//clear_sceen
-
-// Start screen clears and prepares the screen
+   print_character("\033[2J\033[H");
+}// clear_screen
 
 void start_screen() {
-   // empty the screen
    clear_screen();
-
-   // print characters
    print_character("Hello World!");  
 }// start_screen
-
