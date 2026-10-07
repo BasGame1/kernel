@@ -1,9 +1,12 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #include "../include/memory.h"
 
-#include "../utils/memset.c"
-#include "memory.c"
+extern void *memset(void *dest, int val, size_t len);
+extern uintptr_t allocate_memory(void);
+extern uintptr_t get_end_of_memory(void);
+extern uintptr_t start_memory;
 
 /* Implementation of SV32 for virtual memory */
 

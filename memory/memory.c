@@ -4,8 +4,8 @@
 #include "../include/memory.h"
 #include "../include/kernel.h"
 
-#include "../utils/round.c"
-#include "../screen/status.c"
+extern uint32_t round_page(uint32_t number, uint32_t page);
+extern void fatal(char *reason);
 
 extern int _end;
 uintptr_t start_memory = (uintptr_t)&_end;
@@ -17,7 +17,7 @@ uintptr_t *actual_page;
 
 uintptr_t get_end_of_memory() {
    uintptr_t value;
-   asm volatile("csrs %0, t0":"=r"(value));
+   asm volatile("mv %0, t0" : "=r"(value));
    return value;
 }// get_end_of_memory
 
