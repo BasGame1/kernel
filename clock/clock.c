@@ -10,7 +10,7 @@ uintptr_t get_mtime() {
       mtime_high_value = *CLINT_MTIME_HIGH;
       mtime_low_value = *CLINT_MTIME_LOW;
    } while (mtime_high_value != *CLINT_MTIME_HIGH);
-   return (((uintptr_t)mtime_high_value) << 32) | mtime_low_value;
+   return (mtime_high_value << 32) | mtime_low_value;
 }// get_mtime
 
 void set_mtimecmp() {
