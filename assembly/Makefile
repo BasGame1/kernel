@@ -1,16 +1,22 @@
-# Assembly makefile
-#ASFLAGS =
-SRC = $(wildcard *.c)
-OBJECTS = $(SRC:.c=.o)
-COMBINED_OBJECTS = $(OUT_DIR)/$(notdir $(CURDIR)).o
+CC ?= gcc
+CFLAGS ?=
+
+SRC = boot.S trap.S
+OBJECTS = boot.o trap.o
+COMBINED_OBJECTS = $(OUT)/$(notdir $(CURDIR)).o
 
 all: $(COMBINED_OBJECTS)
 
-%.o: %.c
-	$(AS) $(ASFLAGS) -c $< -o out/$@
+boot.o: boot.S
+	sed -e 's/\.[[:space:]]\+/./g' $< | $(CC) $(CFLAGS) -c -x assembler - -o $@
 
-$(COMBINED_OBJECTS): $(OBJ)
-	$(AS) -r -o $@ $^
-	
+trap.o: trap.S
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(COMBINED_OBJECTS): $(OBJECTS)
+	$(CC) $(CFLAGS) -nostdlib -r -o $@ $^
+	rm -f $(OBJECTS)
+
 clean:
-     rm -rf $(OBJECTS) $(COMBINED_OBJECTS)
+	rm -f $(OBJECTS) $(COMBINED_OBJECTS)
+
