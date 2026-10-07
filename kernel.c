@@ -22,6 +22,10 @@ extern void handle_instruction_page_error(void);
 extern void fatal(char *reason);
 
 extern void kernel_init() {
+   /* screen init */
+   start_screen();
+   print("Kernel Starting");
+   
    /* memory init */
    init_memory();
    
@@ -46,9 +50,6 @@ extern void kernel_init() {
    /* clock init */
    init_mtimecmp();
    
-   /* screen init */
-   start_screen();
-   print("Kernel Starting");
   //TODO, add calling processes and tbh, everything else
 }// kernel_init
 
