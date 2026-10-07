@@ -1,8 +1,8 @@
 #ifndef __KERNEL_H
 #define __KERNEL_H
 
-#define uuintptr_t mtime
-#define uintptr_t mtimemcp
+uintptr_t mtime;
+uintptr_t mtimemcp;
 
 #define set_csrs(reg, bit) asm volatile("csrs " #reg ", %0" :: "r"(bit))
 
