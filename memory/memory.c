@@ -11,11 +11,11 @@ int round(int number, int page) {
    return ((number + page) & 0xFFFFF000);
 }// round
 
-uintptr_t get_end_memory() {
+uintptr_t get_end_of_memory() {
    uintptr_t value;
    asm volatile("csrs %0, t0":"=r"(value))
    return value;
-}// get_end_memory
+}// get_end_of_memory
 
 void divide_memory(uintptr_t start, uintptr_t end) {
    /* If anyone reads this block I am sorry if you do not understand
@@ -48,6 +48,6 @@ uintptr_t allocate_memory() {
 
 void init_memory() {
    uintptr_t start_memory_rounded = round(start_memory, PAGE);
-   uintptr_t end_memory = get_end_memory();
+   uintptr_t end_memory = get_end_of_memory();
    divide_memory(start_memory_rounded, end_memory);
 }// init_memory
