@@ -1,4 +1,9 @@
 out/
 *.o
 *.a
+*/*.o
+*/*.a
+*/*/*.o
+*/*/*.a
 scripts/count.sh
+todo.txt
