@@ -22,7 +22,7 @@ extern void kernel_init() {
    init_virtual_memory();
    
    /* trap init */
-   for(int i = 0; i < 16; i++) {
+   for(uint32_t i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
       exception_handlers[i] = unknown_error;
    }// for jump table
@@ -48,7 +48,7 @@ extern void kernel_init() {
 extern void trap_handler() {
    asm volatile("csrr %0, mcause" : "=r" (cause));
    bool is_hardware = cause & ((1<<8)-1);
-   int trap_reason =  cause & ~(1 << 0);
+   uint32_t trap_reason =  cause & ~(1 << 0);
 
    if (trap_reason > 15) {
       fatal("trap reason is bigger than 15");
