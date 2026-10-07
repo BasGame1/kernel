@@ -12,10 +12,14 @@
 #include "clock/clock.c"
 #include "utils/error.c"
 #include "memory/memory.c"
+#include "memory/virtual.c"
 
 extern void kernel_init() {
    /* memory init */
-   init_memory()
+   init_memory();
+   
+   /* virtual memory init */
+   init_virtual_memory();
    
    /* trap init */
    for(int i = 0; i < 16; i++) {
