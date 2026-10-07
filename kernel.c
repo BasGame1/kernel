@@ -1,18 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 
 #include "include/kernel.h"
+#include "include/screen.h"
 
-#include "screen/status.c"
-#include "screen/screen.c"
-#include "utils/concat.c"
-#include "clock/clock.c"
-#include "utils/error.c"
-#include "memory/memory.c"
-#include "memory/virtual.c"
+extern void init_memory(void);
+extern void init_virtual_memory(void);
+extern void init_mtimecmp(void);
+extern void start_screen(void);
+extern void print_character(char *message);
+extern void unknown_error(void);
+extern void handle_illegal_instruction(void);
+extern void handle_breakpoint(void);
+extern void handle_load_access_error(void);
+extern void handle_store_access_error(void);
+extern void handle_clock_error(void);
+extern void handle_load_page_error(void);
+extern void handle_store_page_error(void);
+extern void handle_instruction_page_error(void);
+extern void fatal(char *reason);
 
 extern void kernel_init() {
    /* memory init */
@@ -46,6 +53,7 @@ extern void kernel_init() {
 }// kernel_init
 
 extern void trap_handler() {
+   uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
    bool is_hardware = cause & ((1<<8)-1);
    uint32_t trap_reason =  cause & ~(1 << 0);
@@ -55,8 +63,8 @@ extern void trap_handler() {
    }// if trap_reason gigger than 15
    
    if (is_hardware) {
-      interrupt_handlers(trap_reason);
+      interrupt_handlers[trap_reason]();
    } else {
-      exception_handlers(trap_reason);
+      exception_handlers[trap_reason]();
    }// if is_hardware
 }// trap_handler
