@@ -5,6 +5,12 @@
 #include "neo.h"
 #include "../../include/screen.h"
 
+#define COLOR_RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+
 int main(int argc, char *argv[]) {
  if (argv[1] == NULL) {
   info("No arguments");
