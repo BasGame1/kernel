@@ -1,0 +1,35 @@
+/*
+ * This code only works in x86 arch, not riscv, found out in the hard way
+ */
+#include "../include/screen.h"
+
+int position = 0;
+
+void print_character(char *message) {
+   volatile char *screen = (volatile char *) SCREEN_ADDRESS;
+   int i = 0;
+   while (message[i] != '\0') {
+      if (message[i] == '\n') {
+         position = position + (160 - (position % 160));
+      } else {
+         screen[position] = message[i];
+         screen[position + 1] = 0x1F;
+         position = position + 2;     
+      }// if else
+      i++;
+   }// while
+}// print_character
+
+void clear_screen() {
+   volatile char *screen = (volatile char *) SCREEN_ADR;
+   for (int i = 0; i < (MAX_COL * MAX_ROW * 2); i += 2) { 
+      screen[i] = ' ';
+      screen[i + 1] = 0x1F;
+   }// for
+   position = 0; 
+}// clear_screen
+
+void start_screen() {
+   clear_screen();
+   print_character("Hello World!");  
+}// start_screen
