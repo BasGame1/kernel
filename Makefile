@@ -13,6 +13,7 @@ MAIN_KERNEL_OBJECTS = $(patsubst %.c,$(OUT)/%.o,$(MAIN_KERNEL_FILES))
 ALL_OBJECTS = $(OBJECTS) $(MAIN_KERNEL_OBJECTS)
 TEST_FILES = $(wildcard tests/*.c)
 TEST_OBJECTS = $(patsubst tests/%.c,$(OUT_TESTS)/%.o,$(TEST_FILES))
+LINKER = $(wildcard *.ld)
 
 all: $(OUT) dirs $(TARGET)
 
@@ -31,16 +32,16 @@ dirs_with_tests: $(OUT)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir OUT=$(OUT); done
 
 $(OUT)/%.o: %.c | $(OUT)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -t $(LINKER)
 
 $(OUT_TESTS)/%.o: tests/%.c | $(OUT_TESTS)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -t $(LINKER)
 
 $(TARGET): $(ALL_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $(ALL_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(ALL_OBJECTS) -t $(LINKER)
 
 $(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -t $(LINKER)
 
 clean:
 	@for dir in $(DIRS); do $(MAKE) -C $$dir clean; done
