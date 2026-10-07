@@ -1,0 +1,41 @@
+#include <stdint.h>
+
+#include "../include/memory.h"
+
+#include "../utils/memset.c"
+#include "memory.c"
+
+/* Implementation of SV32 for virtual memory */
+
+void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, uintptr_t physical_address, uint32_t flags) {
+   uint32_t vpn = (virtual_address >> 22) & 0x3FF;
+   uint32_t pte = root_directory[vpn];
+   if ((pte & 1) == 0 ) {
+      // Level 2 does not exist
+      uintptr_t *level2_table = (uint32_t *) allocate_memory();
+      memset(level2_table,0,4096);
+      root_directory[vpn] = ((uintptr_t)level2_table >> 2) | 1;
+      pte = root_directory[vpn];
+   }
+   uintptr_t *level2_table_pointer = (uintptr_t *) ((pte >> 10) << 12);
+   uint32_t vpn0 = (virtual_address >> 12) & 0x3FF;
+   level2_table_pointer[vpn0] = (physical_address >> 2) | flags | 1;
+}// map_virtual_memory
+
+void init_virtual_memory() {
+   uintptr_t *root_directory = (uint32_t *) allocate_memory();
+   memset(root_directory,0,4096);
+   uint32_t address = start_memory;
+   uint32_t end_address = get_end_of_memory();
+   while (address < end_address) {
+      map_virtual_memory(root_directory, address, address, 14);
+      address += 0x1000; // 4096      
+   }// while
+   map_virtual_memory(root_directory, 0x02000000, 0x02000000, 14); // map clit
+   map_virtual_memory(root_directory, 0x10000000, 0x10000000, 14); // map uart
+   uint32_t ppn = ((uint32_t)root_directory) >> 12;
+   uint32_t satp_value = ppn | 0x80000000;
+   asm volatile("csrw satp, %0" : : "r" (satp_value));
+   asm volatile("sfence.vma zero, zero");
+}// init_virtual_memory
+
