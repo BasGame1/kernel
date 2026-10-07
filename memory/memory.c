@@ -15,10 +15,6 @@ uintptr_t next_block;
 uintptr_t *head = 0;
 uintptr_t *actual_page;
 
-int round(int number, int page) {
-   return ((number + page) & 0xFFFFF000);
-}// round
-
 uintptr_t get_end_of_memory() {
    uintptr_t value;
    asm volatile("csrs %0, t0":"=r"(value))
