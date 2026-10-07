@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 size_t parse_number(char *str) {
    size_t result = 0;
    if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) {
@@ -16,4 +18,4 @@ size_t parse_number(char *str) {
       }
    }
    return result;
-}
+}// parse_number
