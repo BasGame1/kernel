@@ -39,10 +39,13 @@ extern void trap_handler() {
    bool is_hardware = cause & ((1<<8)-1);
    int trap_reason =  cause & ~(1 << 0);
 
+   if (trap_reason > 15) {
+      fatal("trap reason is bigger than 15");
+   }// if trap_reason gigger than 15
    
    if (is_hardware) {
-      //TODO, add hardware fix 
+      interrupt_handlers(trap_reason);
    } else {
-      //TODO, add software fix
+      exception_handlers(trap_reason);
    }// if is_hardware
 }// trap_handler
