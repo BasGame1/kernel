@@ -1,6 +1,11 @@
 #ifndef __CLOCK_H
 #define __CLOCK_H
 
-#define interval 10000000
+#define INTERVAL 10000000
+#define CLINT_BASE 0x02000000L
+#define CLINT_MTIMECMP_LOW  ((volatile uint32_t *)(CLINT_BASE + 0x4000))
+#define CLINT_MTIMECMP_HIGH ((volatile uint32_t *)(CLINT_BASE + 0x4004))
+#define CLINT_MTIME_LOW     ((volatile uint32_t *)(CLINT_BASE + 0xBFF8))
+#define CLINT_MTIME_HIGH    ((volatile uint32_t *)(CLINT_BASE + 0xBFFC))
 
 #endif
