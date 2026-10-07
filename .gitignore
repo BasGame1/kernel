@@ -1,4 +1,4 @@
 out/
 *.o
 *.a
-
+scripts/count.sh
