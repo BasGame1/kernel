@@ -1,11 +1,9 @@
 #ifndef __SCREEN_H
 #define __SCREEN_H
 
-#define SCREEN_ADR 0xB8000
-#define MAX_COL 80
-#define MAX_ROW 25
-#define print(message) print_character(message)
+#define SCREEN_ADDRESS 0x10000000
+#define UART_STATUS 0x10000005
 
-int position;
+#define print(message) print_character(message)
 
 #endif
