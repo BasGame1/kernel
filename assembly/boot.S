@@ -2,9 +2,5 @@
     . section .text.bios
 
 _start: 
-   call kernelInit
-       cli
-   1:  hlt
-       jmp 1b
-   ; Enable Machine Interrput Enable
-   mov mie 1
+   la t0, _end
+   call kernel_init
