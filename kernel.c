@@ -11,9 +11,12 @@
 #include "utils/concat.c"
 #include "clock/clock.c"
 #include "utils/error.c"
+#include "memory/memory.c"
 
 extern void kernel_init() {
-
+   /* memory init */
+   init_memory()
+   
    /* trap init */
    for(int i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
