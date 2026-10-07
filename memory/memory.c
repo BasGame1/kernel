@@ -7,6 +7,14 @@
 #include "../utils/round.c"
 #include "../screen/status.c"
 
+extern int _end;
+int start_memory = &_end;
+
+uintptr_t current_block;
+uintptr_t next_block;
+uintptr_t *head = 0;
+uintptr_t *actual_page;
+
 int round(int number, int page) {
    return ((number + page) & 0xFFFFF000);
 }// round
