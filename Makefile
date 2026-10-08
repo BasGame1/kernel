@@ -21,6 +21,9 @@ qemu: all
 arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
 
+debug: CFLAGS += -D__DEBUG__
+debug: all
+
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
 $(OUT):
