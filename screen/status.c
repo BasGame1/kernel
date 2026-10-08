@@ -1,32 +1,42 @@
 #include "../include/kernel.h"
 
-extern void print_character(char *message);
-extern char* concat(char *hardcoded_text, char *reason);
-
 // Status functions
 
 void debug(char *reason) {
-   char *message = concat("\e[0;93m[DEBUG]\e[0;0m ", reason);
+   char *temporal = concat(reason, "\n");
+   char *message = concat("\e[0;93m[DEBUG]\e[0;0m ", temporal);
    print(message);
-} // debug
+}// debug
 
 void error(char *reason) {
-   char *message = concat("\e[0;31m[ERROR]\e[0;0m ", reason);
+   char *temporal = concat(reason, "\n");
+   char *message = concat("\e[0;31m[ERROR]\e[0;0m ", temporal);
    print(message);
-} // error
+}// error
 
 void fatal(char *reason) {
-   char *message = concat("\e[0;91m[ERROR]\e[0;0m ", reason);
+   char *temporal = concat(reason, "\n");
+   char *message = concat("\e[0;91m[ERROR]\e[0;0m ", temporal);
    print(message);
- // TODO, add exit function 
-} // fatal
+   // TODO, add exit function 
+}// fatal
 
 void success(char *reason) {
-   char *message = concat("\e[0;32m[SUCCESS]\e[0;0m ", reason);
+   char *temporal = concat(reason, "\n");
+   char *message = concat("\e[0;32m[SUCCESS]\e[0;0m ", temporal);
    print(message);
-} // success
+}// success
 
 void info(char *reason) {
-   char *message = concat("\e[0;33m[INFO]\e[0;0m ", reason);
+   char *temporal = concat(reason, "\n");
+   char *message = concat("\e[0;33m[INFO]\e[0;0m ", temporal);
    print(message);
-} // info
+}// info
+
+
+// Print wrapper with newline char
+
+void printn(char *message) {
+   char *temporal = concat(message, "\n");
+   print_character(temporal);
+}// printn
