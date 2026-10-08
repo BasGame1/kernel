@@ -37,11 +37,13 @@ uintptr_t *actual_page;
     return probe_address;
   }// get_end_of_memory
 
-   uintptr_t get_end_of_memory() {
-      uintptr_t value;
-      asm volatile("mv %0, t0" : "=r"(value));
-      return value;
-   }// get_end_of_memory
+/*
+ *   uintptr_t get_end_of_memory() {
+ *      uintptr_t value;
+ *      asm volatile("mv %0, t0" : "=r"(value));
+ *      return value;
+ *   }// get_end_of_memory
+ */ 
 #endif
 void divide_memory(uintptr_t start, uintptr_t end) {
    /* If anyone reads this block I am sorry if you do not understand
