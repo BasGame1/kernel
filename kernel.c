@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "include/kernel.h"
+#include "include/shell.h"
 
 extern void kernel_init() {
    /* screen init */
@@ -52,7 +53,7 @@ extern void kernel_init() {
    }// if to see result
    #endif
    
-   //TODO, add calling processes and tbh, everything else
+   init_shell();
 }// kernel_init
 
 extern void trap_handler() {
