@@ -1,22 +1,22 @@
-/* From https://github.com/gcc-mirror/gcc/blob/master/libgcc/memset.c  
- * It has been modified for this project
- */
-
 #include <stddef.h>
+#include <stdint.h>
 
-#include "../../screen/screen.c"
-#include "../../utils/parse_number.c"
+#include "../../../include/shell.h"
+#include "../../../include/kernel.h"
 
-void *main (int argc, char **argv) {
-   if (argc != 3) {
-      print("Usage: memset( *<start address>, int <value to replace with>, size_t <lenght>"); 
-   } else {
-      void *dest = (void*) parse_number(argv[1]);
-      int val = (int) parse_number(argv[2]);
-      size_t len = (size_t) argv[3];
-      unsigned char *ptr = dest;
-      while (len-- > 0)
-         *ptr++ = val;
-      return dest;
+int call_memset(int argc, char **argv) {
+   if (argc != 4) {
+      printn("Usage: memset <address> <char/val> <size>");
+      return 1;
    }
-}// memset
+   void *dest = (void *) parse_number(argv[1]);
+   int val = (int) parse_number(argv[2]);
+   size_t len = (size_t) parse_number(argv[3]);
+   unsigned char *ptr = (unsigned char *) dest;
+   size_t remaining = len;
+   while (remaining-- > 0) {
+      *ptr++ = (unsigned char) val;
+   }
+   successn("Memory filled successfully");
+   return 0;
+}// call_memset
