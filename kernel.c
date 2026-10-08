@@ -4,27 +4,6 @@
 
 #include "include/kernel.h"
 
-extern void init_memory(void);
-extern void init_virtual_memory(void);
-extern void init_mtimecmp(void);
-extern void start_screen(void);
-extern void print_character(char *message);
-extern void unknown_error(void);
-extern void handle_illegal_instruction(void);
-extern void handle_breakpoint(void);
-extern void handle_load_access_error(void);
-extern void handle_store_access_error(void);
-extern void handle_clock_error(void);
-extern void handle_load_page_error(void);
-extern void handle_store_page_error(void);
-extern void handle_instruction_page_error(void);
-extern void fatal(char *reason);
-extern void debug(char *reason);
-extern void success(char *reason);
-extern void info(char *reason);
-extern void error(char *reason);
-
-
 extern void kernel_init() {
    /* screen init */
    start_screen();
@@ -55,7 +34,7 @@ extern void kernel_init() {
    exception_handlers[12] = handle_load_page_error;
    exception_handlers[13] = handle_store_page_error;
    exception_handlers[15] = handle_instruction_page_error;
-   success("Trap Handlers Started\");
+   success("Trap Handlers Started\n");
    
    /* clock init */
    info("Starting Clock\n");
