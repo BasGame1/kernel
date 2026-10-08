@@ -26,7 +26,7 @@ uintptr_t *actual_page;
     uintptr_t probe_address = (uintptr_t)&_end;
     const uintptr_t step = 1024 * 1024 * 4;
     const uint32_t pattern = 0xAA55AA55;
-    while (probe_address < 0xFF000000) {
+   while (probe_address < END_MEMORY) {
        volatile uint32_t *ptr = (volatile uint32_t *)probe_address;
        uint32_t original = *ptr;
        *ptr = pattern;
