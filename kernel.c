@@ -41,6 +41,12 @@ extern void kernel_init() {
    init_mtimecmp();
    successn("Clock Started\n");
    
+   /* test keyboard */
+   
+   #ifdef __DEBUG__
+   char * test_keyboard = test_keyboard();
+   #endif
+   
    //TODO, add calling processes and tbh, everything else
 }// kernel_init
 
