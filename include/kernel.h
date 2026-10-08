@@ -36,7 +36,11 @@ extern void success(char *reason);
 extern void info(char *reason);
 extern void error(char *reason);
 extern void print_asccii_art(void);
-extern char* concat(char *hardcoded_text, char *reason);
+extern char *concat(char *hardcoded_text, char *reason);
 extern void printn(char *message);
+extern char *get_input(void);
+extern char get_char(void);
+extern bool test_keyboard(void);
+extern void print_input(void);
 
 #endif
