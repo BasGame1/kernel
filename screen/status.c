@@ -1,5 +1,4 @@
-#include <string.h>
-#include "../include/screen.h"
+#include "../include/kernel.h"
 
 extern void print_character(char *message);
 extern char* concat(char *hardcoded_text, char *reason);
