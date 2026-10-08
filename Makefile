@@ -1,5 +1,5 @@
 CC = riscv64-unknown-elf-gcc
-CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany
+CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr -mabi=ilp32
 OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
@@ -17,6 +17,9 @@ all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
 
 qemu: CFLAGS += -D__QEMU__
 qemu: all
+
+arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
+arch64: all
 
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
