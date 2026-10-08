@@ -23,9 +23,7 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
       root_directory[vpn] = ((uintptr_t)level2_table >> 2) | 1;
       pte = root_directory[vpn];
       successn("Level 2 table created\n");
-   } else {
-      info("Level 2 table exists\n");
-   }// if for the level 2 table
+   }
    uintptr_t *level2_table_pointer = (uintptr_t *) (uintptr_t) ((pte >> 10) << 12);
    uint32_t vpn0 = (virtual_address >> 12) & 0x3FF;
    level2_table_pointer[vpn0] = (physical_address >> 2) | flags | 1;

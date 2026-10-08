@@ -66,7 +66,9 @@ void handle_load_access_error() {
    handle_store_access_error();
 }// handle_load_access_error
 
-void handle_clock_error() {}// handle_clock_error
+void handle_clock_error() {
+   set_mtimecmp();
+}// handle_clock_error
 void handle_umode_error() {}// handle_umode_error
 void handle_load_page_error() {}// handle_load_page_error
 void handle_store_page_error() {}// handle_store_page_error

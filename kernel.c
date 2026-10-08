@@ -57,21 +57,19 @@ extern void kernel_init() {
 }// kernel_init
 
 extern void trap_handler() {
-   infon("trap handler called");
    uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
-   bool is_hardware = cause & ((1<<8)-1);
-   uint32_t trap_reason =  cause & ~(1 << 0);
+   bool is_hardware = (cause & 0x80000000) != 0;
+   uint32_t trap_reason = cause & 0x7FFFFFFF;
 
    if (trap_reason > 15) {
       fataln("trap reason is bigger than 15");
-   }// if trap_reason gigger than 15
+      return;
+   }
    
    if (is_hardware) {
-      infon("Trap reason is hardware");
       interrupt_handlers[trap_reason]();
    } else {
-      infon("Trap reason is software");
       exception_handlers[trap_reason]();
-   }// if is_hardware
+   }
 }// trap_handler

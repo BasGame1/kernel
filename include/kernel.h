@@ -22,6 +22,7 @@ extern void init_memory(void);
 extern void init_virtual_memory(void);
 
 extern void init_mtimecmp(void);
+extern void set_mtimecmp(void);
 
 extern void unknown_error(void);
 extern void handle_illegal_instruction(void);
