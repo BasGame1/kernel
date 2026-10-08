@@ -83,6 +83,9 @@ void call_help(void) {
    printn("help - To show this menu");
    printn("version - To show info about the kernel");
    printn("info - Same as version");
+   printn("clean - Clears the screen");
+   printn("clear - Same as clean");
+   printn("logo - Prints the polar bear logo");
    printn("exit - Exit the shell");
 }// call_help
 
