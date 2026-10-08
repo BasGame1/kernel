@@ -36,5 +36,7 @@ extern void success(char *reason);
 extern void info(char *reason);
 extern void error(char *reason);
 extern void print_asccii_art(void);
+extern char* concat(char *hardcoded_text, char *reason);
+extern void printn(char *message);
 
 #endif
