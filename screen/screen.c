@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include "../include/kernel.h"
 #include "../include/hardware.h"
 
 void print_character(char *message) {
@@ -11,7 +12,7 @@ void print_character(char *message) {
          // do not do anything, just wait
       }// while check if uart is free   
       if ((message[i] == '\010') || (message[i] == '\177')) {
-         *screen_address_pointer = (char) "\010"; // delete last char
+         *screen_address_pointer = (char) '\010'; // delete last char
       } else {
          *screen_address_pointer = message[i];
       }// if check for backspace
@@ -25,5 +26,6 @@ void clear_screen() {
 
 void start_screen() {
    clear_screen();
-   print_character("Hello World!");  
+   //print_character("[Screen Starting]\n");
+   print_asccii_art();
 }// start_screen
