@@ -17,12 +17,12 @@ uintptr_t *actual_page;
 
 #ifdef __QEMU__
   uintptr_t get_end_of_memory() {
-     info("QEMU: Memory value hardcoded");
+     infon("QEMU: Memory value hardcoded");
      return END_MEMORY;
   }// get_end_of_memory
 #else
   uintptr_t get_end_of_memory() {
-    info("Testing the end of memory");
+    infon("Testing the end of memory");
     uintptr_t probe_address = (uintptr_t)&_end;
     const uintptr_t step = 1024 * 1024 * 4;
     const uint32_t pattern = 0xAA55AA55;
@@ -36,7 +36,7 @@ uintptr_t *actual_page;
         *ptr = original;
         probe_address += step;
     }// while
-    success("Reached the end of memory");
+    successn("Reached the end of memory");
     return probe_address;
   }// get_end_of_memory
 
@@ -52,34 +52,38 @@ void divide_memory(uintptr_t start, uintptr_t end) {
    /* If anyone reads this block I am sorry if you do not understand
     * The var names are horrible, but I could not come up with a better name
     */
-   info("Dividing memory in pages");
+   infon("Dividing memory in pages");
    current_block = start;
    while (current_block < end) {
+      #ifdef __DEBUG__
+          debug("Looping, actual block is: ");
+          debugn(current_block);
+      #endif
       uintptr_t *current_page = (uintptr_t *)current_block;
       *current_page = (uintptr_t) head;
       head = (uintptr_t *) current_block;
       current_block += 0x1000; // 4096
    }// while loop to divide the memory
-   success("Memory divided in pages");
+   successn("Memory divided in pages");
 }// divide_memory
 
 void free_memory(uintptr_t *current_full_page) {
-   info("Freeing memory");
+   infon("Freeing memory");
    *current_full_page = (uintptr_t) head;
    head = current_full_page;
-   success("Freeing memory was successfull");
+   successn("Freeing memory was successfull");
 }// free_memory
 
 uintptr_t allocate_memory() {
-   info("Allocating memory");
+   infon("Allocating memory");
    if ( head == 0 ) {
-      error("Out of Memory");
+      errorn("Out of Memory");
       //TODO, add case for oom
    }// if to see if oom
    uintptr_t free_page = (uintptr_t) head;
    uintptr_t *next_free_page = head;
    head = (uintptr_t *) *next_free_page;
-   success("Allocated memory successfully");
+   successn("Allocated memory successfully");
    return free_page;
 }// allocate_memory
 
