@@ -44,7 +44,12 @@ extern void kernel_init() {
    /* test keyboard */
    
    #ifdef __DEBUG__
-   char * test_keyboard = test_keyboard();
+   debugn("Testing keyboard");
+   if (test_keyboard()) {
+      infon("Keyboard correct");
+   } else {
+      errorn("Keyboard error");
+   }// if to see result
    #endif
    
    //TODO, add calling processes and tbh, everything else
