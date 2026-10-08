@@ -57,7 +57,7 @@ void divide_memory(uintptr_t start, uintptr_t end) {
    while (current_block < end) {
       #ifdef __DEBUG__
           debug("Looping, actual block is: ");
-          debugn(current_block);
+          debugn((char *) current_block);
       #endif
       uintptr_t *current_page = (uintptr_t *)current_block;
       *current_page = (uintptr_t) head;
