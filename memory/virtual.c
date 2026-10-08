@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "../include/memory.h"
+#include "../include/hardware.h"
 
 extern void *memset(void *dest, int val, size_t len);
 extern uintptr_t allocate_memory(void);
@@ -36,6 +37,11 @@ void init_virtual_memory() {
    }// while
    map_virtual_memory(root_directory, 0x02000000, 0x02000000, 14); // map clit
    map_virtual_memory(root_directory, 0x10000000, 0x10000000, 14); // map uart
+   uint32_t i = START_HARDWARE_ADDRESS;
+   while (i < END_HARDWARE_ADDRESS) {
+      map_virtual_memory(root_directory, i, i, 14);
+      i++;
+   } // while to loop for mapping every hardware address
    uint32_t ppn = (uint32_t)(((uintptr_t)root_directory) >> 12);
    uint32_t satp_value = ppn | 0x80000000;
    asm volatile("csrw satp, %0" : : "r" (satp_value));
