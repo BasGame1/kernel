@@ -9,15 +9,14 @@ void print_character(char *message) {
    uint32_t i = 0;
    while (message[i] != '\0') {
       while ((*uart_status_pointer & 0x20) == 0) {
-         // do not do anything, just wait
-      }// while check if uart is free   
+      }
       if ((message[i] == '\010') || (message[i] == '\177')) {
-         *screen_address_pointer = (char) '\010'; // delete last char
+         *screen_address_pointer = (char) '\010';
       } else {
          *screen_address_pointer = message[i];
-      }// if check for backspace
+      }
       i++;
-   }// while to loop for every character
+   }
 }// print_character
 
 void clear_screen() {

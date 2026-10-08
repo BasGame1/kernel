@@ -43,6 +43,12 @@ int check_command(char *full_command) {
       call_info();
    } else if (strcmp(command, "version") == 0) {
       call_version();
+   } else if (strcmp(command, "clear") == 0) {
+      clear_screen();
+   } else if (strcmp(command, "clean") == 0) {
+      clear_screen();
+   } else if (strcmp(command, "logo") == 0) {
+      print_asccii_art();
    } else if (strcmp(command, "exit") == 0) {
       return 1;
    } else {

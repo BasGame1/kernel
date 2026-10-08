@@ -46,6 +46,7 @@ extern void infon(char *reason);
 extern void errorn(char *reason);
 extern void printn(char *message);
 extern void start_screen(void);
+extern void clear_screen();
 extern void print_character(char *message);
 
 extern void print_asccii_art(void);
