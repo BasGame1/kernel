@@ -8,3 +8,4 @@ out/
 scripts/count.sh
 todo.txt
 asccii.art
+qemu*.core
