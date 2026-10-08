@@ -3,7 +3,6 @@
 #include <stdbool.h>
 
 #include "include/kernel.h"
-#include "include/screen.h"
 
 extern void init_memory(void);
 extern void init_virtual_memory(void);
@@ -20,19 +19,29 @@ extern void handle_load_page_error(void);
 extern void handle_store_page_error(void);
 extern void handle_instruction_page_error(void);
 extern void fatal(char *reason);
+extern void debug(char *reason);
+extern void success(char *reason);
+extern void info(char *reason);
+extern void error(char *reason);
+
 
 extern void kernel_init() {
    /* screen init */
    start_screen();
-   print("Kernel Starting");
+   success("Kernel Starting\n");
    
    /* memory init */
+   info("Starting MMU\n");
    init_memory();
+   success("Memory Started\n");
    
    /* virtual memory init */
+   info("Starting Virtual Memory\n");
    init_virtual_memory();
+   success("Virtual Memory Started\n");
    
    /* trap init */
+   info("Starting Trap Handlers\n");
    for(uint32_t i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
       exception_handlers[i] = unknown_error;
@@ -46,11 +55,14 @@ extern void kernel_init() {
    exception_handlers[12] = handle_load_page_error;
    exception_handlers[13] = handle_store_page_error;
    exception_handlers[15] = handle_instruction_page_error;
+   success("Trap Handlers Started\");
    
    /* clock init */
+   info("Starting Clock\n");
    init_mtimecmp();
+   success("Clock Started\n");
    
-  //TODO, add calling processes and tbh, everything else
+   //TODO, add calling processes and tbh, everything else
 }// kernel_init
 
 extern void trap_handler() {
