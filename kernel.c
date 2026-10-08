@@ -35,6 +35,7 @@ extern void kernel_init() {
    exception_handlers[12] = handle_load_page_error;
    exception_handlers[13] = handle_store_page_error;
    exception_handlers[15] = handle_instruction_page_error;
+   asm volatile("csrw mtvec, %0" :: "r"(trap_vector));
    successn("Trap Handlers Started\n");
    
    /* clock init */

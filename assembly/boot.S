@@ -5,6 +5,9 @@ _start:
    la t0, _end
    la sp, stack_top
    call kernel_init
+1:
+   wfi
+   j 1b
     
     
     .section .bss
