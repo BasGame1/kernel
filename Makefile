@@ -24,6 +24,12 @@ run: all
 arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
 
+NOSHELL_TARGET = $(OUT)/kernel-noshell
+
+noshell: NOSHELL_DIRS = $(filter-out shell,$(DIRS))
+noshell: CFLAGS += -D__NOSHELL__
+noshell: $(OUT) noshell_dirs $(KERNEL_OBJECT) $(NOSHELL_TARGET)
+
 DEBUG_TARGET = $(OUT)/kernel-debug
 
 debug: CFLAGS += -D__DEBUG__
@@ -39,6 +45,9 @@ $(OUT_TESTS):
 
 dirs: $(OUT)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
+	
+noshell_dirs: $(OUT)
+	@for dir in $(NOSHELL_DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
 
 dirs_with_tests: $(OUT)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
@@ -65,4 +74,4 @@ clean:
 	@for dir in $(DIRS); do $(MAKE) -C $$dir clean OUT=$(OUT); done
 	rm -rf $(OUT)
 
-.PHONY: all dirs dirs_with_tests tests clean run debug qemu arch64
+.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell
