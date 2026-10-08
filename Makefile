@@ -18,6 +18,9 @@ all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
 qemu: CFLAGS += -D__QEMU__
 qemu: all
 
+run: all
+	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic
+
 arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
 
@@ -61,5 +64,5 @@ clean:
 	@for dir in $(DIRS); do $(MAKE) -C $$dir clean OUT=$(OUT); done
 	rm -rf $(OUT)
 
-.PHONY: all dirs dirs_with_tests tests clean
+.PHONY: all dirs dirs_with_tests tests clean run
 
