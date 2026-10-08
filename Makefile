@@ -4,7 +4,7 @@ OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
 TARGET_TESTS = $(OUT_TESTS)/run_tests
-DIRS = assembly clock screen memory utils keyboard shell
+DIRS = assembly clock screen memory utils keyboard shell filesystem
 OBJECTS = $(foreach dir,$(DIRS),$(OUT)/$(dir).o)
 KERNEL_OBJECT = $(OUT)/kernel.o
 ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT)
@@ -24,9 +24,10 @@ run: all
 arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
 
+DEBUG_TARGET = $(OUT)/kernel-debug
+
 debug: CFLAGS += -D__DEBUG__
-debug: TARGET = $(OUT)/kernel-debug
-debug: all
+debug: $(OUT) dirs $(KERNEL_OBJECT) $(DEBUG_TARGET)
 
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
@@ -54,7 +55,7 @@ $(GEN_LINKER): $(LINKER) | $(OUT)
 	    -e 's/SECTIONS[[:space:]]*=[[:space:]]*/SECTIONS/g' \
 	    -e 's/\(\.[a-zA-Z0-9_.]\+\)[[:space:]]*=[[:space:]]*{/\1 : {/g' $< > $@
 
-$(TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
+$(TARGET) $(DEBUG_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
 	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(ALL_OBJECTS)
 
 $(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(GEN_LINKER)
@@ -64,5 +65,4 @@ clean:
 	@for dir in $(DIRS); do $(MAKE) -C $$dir clean OUT=$(OUT); done
 	rm -rf $(OUT)
 
-.PHONY: all dirs dirs_with_tests tests clean run
-
+.PHONY: all dirs dirs_with_tests tests clean run debug qemu arch64
