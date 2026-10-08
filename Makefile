@@ -1,5 +1,5 @@
 CC = riscv64-unknown-elf-gcc
-CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr -mabi=ilp32
+CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr -mabi=ilp32 -D__QEMU__
 OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
@@ -58,7 +58,7 @@ $(TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
 	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(ALL_OBJECTS)
 
 $(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(GEN_LINKER)
-	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $^
+	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS)
 
 clean:
 	@for dir in $(DIRS); do $(MAKE) -C $$dir clean OUT=$(OUT); done
