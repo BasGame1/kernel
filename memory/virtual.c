@@ -40,7 +40,7 @@ void init_virtual_memory() {
    uint32_t i = START_HARDWARE_ADDRESS;
    while (i < END_HARDWARE_ADDRESS) {
       map_virtual_memory(root_directory, i, i, 14);
-      i++;
+      i += 0x1000;
    } // while to loop for mapping every hardware address
    uint32_t ppn = (uint32_t)(((uintptr_t)root_directory) >> 12);
    uint32_t satp_value = ppn | 0x80000000;
