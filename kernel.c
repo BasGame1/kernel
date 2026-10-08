@@ -54,7 +54,12 @@ extern void kernel_init() {
    }// if to see result
    #endif
    
-   init_shell();
+   /* shell init */
+   #ifdef __NOSHELL__
+      // Compilation without shell
+   #else
+      init_shell();
+   #endif
 }// kernel_init
 
 extern void trap_handler() {
