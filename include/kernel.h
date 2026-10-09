@@ -5,18 +5,18 @@
 #ifndef __KERNEL_H
 #define __KERNEL_H
 
-uintptr_t mtime;
-uintptr_t mtimemcp;
-
 #define print(message) print_character(message)
 #define set_csrs(reg, bit) asm volatile("csrs " #reg ", %0" :: "r"(bit))
+
+uintptr_t mtime;
+uintptr_t mtimemcp;
+typedef void (*handler_t)(void);
+handler_t interrupt_handlers[16];
+handler_t exception_handlers[16];
 
 extern void trap_vector();
 extern void trap_handler();
 extern void init_traps();
-typedef void (*handler_t)(void);
-handler_t interrupt_handlers[16];
-handler_t exception_handlers[16];
 
 extern void init_memory(void);
 extern void init_virtual_memory(void);
@@ -72,4 +72,5 @@ extern uint32_t probe_mmio();
 extern void ext2_read_block(uint32_t block, void *buffer);
 extern void ext2_write_block(uint32_t block, void *buffer);
 extern void init_ext2(void);
+
 #endif
