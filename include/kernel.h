@@ -63,4 +63,13 @@ extern char get_char(void);
 extern bool test_keyboard(void);
 extern void print_input(void);
 
+extern void init_fs(void);
+extern void init_ext2(void);
+extern int virtio_write_sector(uint64_t sector, void *buffer);
+extern int virtio_read_sector(uint64_t sector, void *buffer);
+extern int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write);
+extern uint32_t probe_mmio();
+extern void ext2_read_block(uint32_t block, void *buffer);
+extern void ext2_write_block(uint32_t block, void *buffer);
+extern void init_ext2(void);
 #endif
