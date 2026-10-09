@@ -55,7 +55,7 @@ extern void kernel_init() {
    #endif
    
    /* filesystem init */
-   init_fs():
+   init_fs();
    init_ext2();
    
    /* shell init */
