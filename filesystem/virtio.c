@@ -123,7 +123,7 @@ void init_fs() {
    *status = 1 | 2;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DEVICE_FEATURES_SEL) = 0;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DRIVER_FEATURES_SEL) = 0;
-   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DRIVER_FEATURES_SEL) = 0;
+   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DRIVER_FEATURES) = 0;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DEVICE_FEATURES_SEL) = 1;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DRIVER_FEATURES_SEL) = 1;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_DRIVER_FEATURES) = (1 << 0);
