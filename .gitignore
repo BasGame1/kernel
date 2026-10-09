@@ -9,5 +9,6 @@ scripts/count.sh
 todo.txt
 asccii.art
 qemu*.core
-// Until it is finished, ignore tails and vm
+#Until it is finished, ignore tails and vm
 vm/
+*.img
