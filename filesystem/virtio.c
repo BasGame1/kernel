@@ -11,7 +11,15 @@ static struct virtq_used queue_used __attribute__((aligned(4)));
 static uint16_t last_used_idx = 0;
 static struct virtio_blk_req disk_req;
 static volatile uint8_t disk_status;
-    
+
+/* Wrappers just for commodity */
+int virtio_read_sector(uint64_t sector, void *buffer) {
+   return virtio_blk_transfer(sector, buffer, false);
+}
+int virtio_write_sector(uint64_t sector, void *buffer) {
+   return virtio_blk_transfer(sector, buffer, true);
+}
+
 uint32_t probe_mmio() {
   infon("Probbing hardware addresses for block device");
   uint32_t i;
@@ -102,18 +110,11 @@ int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write) {
    return 0;
 }// virtio_blk_transfer
 
-/* Wrappers just for commodity */
-int virtio_read_sector(uint64_t sector, void *buffer) {
-   return virtio_blk_transfer(sector, buffer, false);
-}
-int virtio_write_sector(uint64_t sector, void *buffer) {
-   return virtio_blk_transfer(sector, buffer, true);
-}
-
 void init_fs() {
    uint32_t address = probe_mmio();
    if (address == 0) {
       fataln("No addresses found");
+      return;
    }// if check if no addresses found
    virtio_base = address;
    volatile uint32_t *status = (volatile uint32_t *)(uintptr_t)(address + VIRTIO_DEVICE_STATUS);
