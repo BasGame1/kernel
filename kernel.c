@@ -54,6 +54,10 @@ extern void kernel_init() {
    }// if to see result
    #endif
    
+   /* filesystem init */
+   init_fs():
+   init_ext2();
+   
    /* shell init */
    #ifdef __NOSHELL__
       // Compilation without shell
