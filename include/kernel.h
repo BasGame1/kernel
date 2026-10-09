@@ -50,7 +50,7 @@ extern void clear_screen();
 extern void print_character(char *message);
 
 extern void print_asccii_art(void);
-
+extern static bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len)
 extern char *concat(char *hardcoded_text, char *reason);
 extern int strcmp(const char *s1, const char *s2);
 extern size_t parse_number(char *str);
