@@ -60,15 +60,23 @@ void init_ext2() {
    info("Bgd inode table is: ");
    uint32_t inode_table_block = bgd[0].bg_inode_table;
    print_dec(inode_table_block);
+   print_character("\n");
    /* inodes */
-   uint32_t inode_id = 2; // unnecesary for now
+   uint32_t inode_size = (sb->ext2_rev_level >= 1 && sb->ext2_inode_size != 0) ? sb->ext2_inode_size : 128;
+   uint32_t inode_id = 2;
    uint32_t inode_index = inode_id - 1;
-   uint32_t inode_block = inode_table_block + (inode_index * 128) / ext2_block_size;
-   uint32_t byte_offset = (inode_index * 128) % ext2_block_size;
+   uint32_t inode_block = inode_table_block + (inode_index * inode_size) / ext2_block_size;
+   uint32_t byte_offset = (inode_index * inode_size) % ext2_block_size;
    ext2_read_block(inode_block, buffer);
    struct ext2_inode *root_inode = (struct ext2_inode *)(buffer + byte_offset);
    uint32_t dir_size = root_inode->inode_size;
    uint32_t block_number = root_inode->inode_block[0];
+   info("Dir size: ");
+   print_dec(dir_size);
+   print_character("\n");
+   info("Dir block 0: ");
+   print_dec(block_number);
+   print_character("\n");
    static uint8_t dir_buffer[4096];
    ext2_read_block(root_inode->inode_block[0], dir_buffer);
    uint32_t offset = 0;
@@ -77,15 +85,54 @@ void init_ext2() {
       if (entry->rec_len == 0) {
          infon("Exiting loop");
          break;
-      }// if to exit loop
       if (entry->inode != 0) {
-        char name_buf[256];
-        for (uint8_t i = 0; i < entry->name_len; i++) {
+         char name_buf[256];
+         for (uint8_t i = 0; i < entry->name_len; i++) {
             name_buf[i] = entry->name[i];
-        }// for loop
+         }// for loop
+         name_buf[entry->name_len] = '\0';
+         print_character(name_buf);
+         print_character("\n");
       }// if to check if value is not 0
-      entry->name[entry->name_len - 1] = entry->name[0]
-      printn(entry->name[entry->name_len - 1]);
       offset += entry->rec_len;
    }// while
 }// init_ext2
+
+uint32_t ext2_read_inode(uint32_t inode_no, struct ext2_inode *out) {
+   inode_block = bg_inode_table + ((inode_no - 1) * inode_size) / ext2_block_size;
+   byte_offset = ((inode_no - 1) * inode_size) % ext2_block_size;
+   static uint32_t *buffer[4096];
+   ext2_read_block(inode_block, buffer);
+   struct ext2_inode *src = (struct ext2_inode *)(buffer + byte_offset);
+   *out = *src;
+   return 0;
+}// ext2_read_inode
+
+uint32_t ext2_write_inode(uint32_t inode_no, const struct ext2_inode *in) {
+
+}// ext2_write_inode
+
+uint32_t ext2_lookup(uint32_t dir_inode_no, const char *name) {
+   return inode_no;
+}// ext2_lookup
+
+uint32_t ext2_resolve_path(const char *path){
+   uint32_t current_inode = 2;
+   char token[256];
+   while (i < sizeof(path)) {
+      if (i == '/') {
+      token[i] = '\0';
+      } else {
+      token[i] = path[i];
+      }
+      i++;
+   }// while
+   for (uint32_t i = 1; i < sizeof(path); i++) {
+      if (i == '/' ) {
+         current_inode = ext2_lookup(current_inode, path);
+      } else {
+         token[i] = path[i];
+      }// if search for / 
+   }// for loop and tokenize
+   return inode_no;
+}// ext2_resolve_path
