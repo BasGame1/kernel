@@ -55,8 +55,81 @@ struct virtq_used {
    struct virtq_used_elem ring[VIRTQ_NUM];
 };
 struct virtio_blk_req {
-   uint32_t type;     // VIRTIO_BLK_T_IN or VIRTIO_BLK_T_OUT
-   uint32_t reserved; // 0
-   uint64_t sector;   // LBA sector number (0, 1, 2, ...)
+   uint32_t type;
+   uint32_t reserved;
+   uint64_t sector;
 };
+
+#define EXT2_MAGIC 0xEF53
+
+struct ext2_super_block {
+   uint32_t ext2_inodes_count;
+   uint32_t ext2_blocks_count;
+   uint32_t ext2_r_blocks_count;
+   uint32_t ext2_free_blocks_count;
+   uint32_t ext2_free_inodes_count;
+   uint32_t ext2_first_data_block;
+   uint32_t ext2_log_block_size;
+   uint32_t ext2_log_frag_size;
+   uint32_t ext2_blocks_per_group;
+   uint32_t ext2_frags_per_group;
+   uint32_t ext2_inodes_per_group;
+   uint32_t ext2_mtime;
+   uint32_t ext2_wtime;
+   uint16_t ext2_mnt_count;
+   uint16_t ext2_max_mnt_count;
+   uint16_t ext2_magic;
+   uint16_t ext2_state;
+   uint16_t ext2_errors;
+   uint16_t ext2_minor_rev_level;
+   uint32_t ext2_lastcheck;
+   uint32_t ext2_checkinterval;
+   uint32_t ext2_creator_os;
+   uint32_t ext2_rev_level;
+   uint16_t ext2_def_resuid;
+   uint16_t ext2_def_resgid;
+   uint32_t ext2_first_ino;
+   uint16_t ext2_inode_size;
+};
+
+struct ext2_group_desc {
+   uint32_t bg_block_bitmap;
+   uint32_t bg_inode_bitmap;
+   uint32_t bg_inode_table;
+   uint16_t bg_free_blocks_count;
+   uint16_t bg_free_inodes_count;
+   uint16_t bg_used_dirs_count;
+   uint16_t bg_pad;
+   uint32_t bg_reserved[3];
+};
+
+struct ext2_inode {
+   uint16_t inode_mode;
+   uint16_t inode_uid;
+   uint32_t inode_size;
+   uint32_t inode_atime;
+   uint32_t inode_ctime;
+   uint32_t inode_mtime;
+   uint32_t inode_dtime;
+   uint16_t inode_gid;
+   uint16_t inode_links_count;
+   uint32_t inode_blocks;
+   uint32_t inode_flags;
+   uint32_t inode_osd1;
+   uint32_t inode_block[15];
+   uint32_t inode_generation;
+   uint32_t inode_file_acl;
+   uint32_t inode_dir_acl;
+   uint32_t inode_faddr;
+   uint32_t inode_osd2[3];
+};
+
+struct ext2_dir_entry {
+   uint32_t inode;
+   uint16_t rec_len;
+   uint8_t name_len;
+   uint8_t file_type;
+   char name[];
+};
+
 #endif
