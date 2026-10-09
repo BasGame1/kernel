@@ -19,7 +19,7 @@ qemu: CFLAGS += -D__QEMU__
 qemu: all
 
 run: all
-	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic
+	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic -drive file=disk.img,if=none,format=raw,id=hd0 -global virtio-mmio.force-legacy=false -device virtio-blk-device,drive=hd0
 
 arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
