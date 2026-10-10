@@ -31,6 +31,7 @@ int check_command(char *full_command) {
       return 0;
    }
    char *command = argv[0];
+   // Bad code, ik, but atm idk any other easy and quick alternative to this monster
    if (strcmp(command, "neo") == 0) {
       call_neo(argc, argv);
    } else if (strcmp(command, "help") == 0) {
@@ -49,6 +50,10 @@ int check_command(char *full_command) {
       clear_screen();
    } else if (strcmp(command, "logo") == 0) {
       print_asccii_art();
+   else if (strcmp(command, "ls") == 0) {
+      call_ls(argc, argv);
+   else if (strcmp(command, "memcpy") == 0) {
+      call_memcpy(argc, argv);
    } else if (strcmp(command, "exit") == 0) {
       return 1;
    } else {
@@ -85,6 +90,8 @@ void call_help(void) {
    printn("info - Same as version");
    printn("clean - Clears the screen");
    printn("clear - Same as clean");
+   printn("ls - List files");
+   printn("memcpy <destiny address> <origin address> <size> - Copys a block of data from one address to another ");
    printn("logo - Prints the polar bear logo");
    printn("exit - Exit the shell");
 }// call_help
@@ -107,3 +114,18 @@ void call_info(void) {
 void call_version(void) {
    call_info();
 }// call_version
+
+void call_ls(argc, argv) {
+   if (argc != 1) {
+      ls(argv);
+   } else {
+      errorn("ls should only have 1 arg");
+   }// if
+}// call_ls
+void call_memcpy(argc, argv) {
+   if (argc != 3) {
+      memcpy(argv[1], argv[2], argv[3]);
+   } else {
+      errorn("ls should only have 3 args");
+   }// if
+}// call_memcpy
