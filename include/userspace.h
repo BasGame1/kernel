@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef __USERSPACE_H
 #define __USERSPACE_H
@@ -31,6 +32,7 @@ extern void start_screen(void);
 extern void clear_screen();
 extern void print_character(char *message);
 
+struct ext2_dir_entry;
 extern void print_asccii_art(void);
 extern bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len);
 extern char *concat(char *hardcoded_text, char *reason);
@@ -62,21 +64,6 @@ extern void sys_map_device(uintptr_t phys_addr, uintptr_t virt_addr);
 
 extern void test_user_program(void);
 extern void userspace_init(void);
-
-extern uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr);
-extern uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf);
-extern uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply);
-extern void kcall_analyze(struct trap_frame *frame);
-
-extern bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid);
-extern uint32_t create_process(void *entry, uint32_t gid);
-extern uint32_t get_free_pid();
-extern struct get_proccess_by_pid(uint32_t pid);
-extern void schedule(void *current_frame);
-extern uint32_t get_same_status_pid(uint32_t pid, uint32_t state);
-extern struct get_proccess_by_frame(void *frame)
-
-struct ext2_dir_entry;
 
 struct trap_frame {
    uint32_t mepc;
@@ -120,6 +107,7 @@ typedef enum {
    PROCESS_BLOCKED_SEND,
    PROCESS_BLOCKED_RECV
 } p_state_t;
+
 struct process {
    uint32_t pid;
    uint32_t gid;
@@ -130,7 +118,25 @@ struct process {
    uint32_t ipc_target_pid;
    void *ipc_msg_buf;
 };
-struct trap_frame *schedule(struct trap_frame *current_frame);
-struct process processes[MAX_PROCESSES];
+
+extern struct process processes[MAX_PROCESSES];
+extern int current_pid;
+
+extern uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr);
+extern uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf);
+extern uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply);
+extern void kcall_analyze(struct trap_frame *frame);
+
+extern bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid);
+extern uint32_t create_process(void *entry, uint32_t gid);
+extern uint32_t get_free_pid(void);
+extern struct process *get_process_by_pid(uint32_t pid);
+extern struct process *get_process_by_frame(void *frame);
+extern struct trap_frame *schedule(struct trap_frame *current_frame);
+
+extern uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr);
+extern uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf);
+extern uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply);
+extern uint32_t user_yield(void);
 
 #endif
