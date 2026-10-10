@@ -4,24 +4,25 @@
 
 #include "include/kernel.h"
 #include "include/shell.h"
+#include "include/userspace.h"
 
 extern void kernel_init() {
    /* screen init */
    start_screen();
-   successn("Kernel Starting\n");
+   successn("Kernel Starting");
    
    /* memory init */
-   infon("Starting MMU\n");
+   infon("Starting MMU");
    init_memory();
-   successn("Memory Started\n");
+   successn("Memory Started");
    
    /* virtual memory init */
-   infon("Starting Virtual Memory\n");
+   infon("Starting Virtual Memory");
    init_virtual_memory();
-   successn("Virtual Memory Started\n");
+   successn("Virtual Memory Started");
    
    /* trap init */
-   infon("Starting Trap Handlers\n");
+   infon("Starting Trap Handlers");
    for(uint32_t i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
       exception_handlers[i] = unknown_error;
@@ -32,16 +33,17 @@ extern void kernel_init() {
    exception_handlers[5] = handle_load_access_error;
    exception_handlers[7] = handle_store_access_error;
    interrupt_handlers[7] = handle_clock_error;
+   exception_handlers[8] = test_call; // test kernel calls
    exception_handlers[12] = handle_load_page_error;
    exception_handlers[13] = handle_store_page_error;
    exception_handlers[15] = handle_instruction_page_error;
    asm volatile("csrw mtvec, %0" :: "r"(trap_vector));
-   successn("Trap Handlers Started\n");
+   successn("Trap Handlers Started");
    
    /* clock init */
-   infon("Starting Clock\n");
+   infon("Starting Clock");
    init_mtimecmp();
-   successn("Clock Started\n");
+   successn("Clock Started");
    
    /* test keyboard */
    
@@ -55,15 +57,30 @@ extern void kernel_init() {
    #endif
    
    /* filesystem init */
+   infon("Starting filesystem");
    init_fs();
+   infon("Starting ext2 fs");
    init_ext2();
    
-   /* shell init */
-   #ifdef __NOSHELL__
-      // Compilation without shell
-   #else
-      init_shell();
+   /* 
+    * shell init
+    * This kernel-shell abomination should only be called on debug version 
+    * to diagnose errors at boot
+    */
+    
+   #ifdef __DEBUG__
+      #ifdef __NOSHELL__
+         debugn("Not opening shell due to noshell compilation");
+      #else
+         infon("Starting shell");
+         init_shell();
+      #endif
    #endif
+   
+   /* userspace init */
+   infon("Starting userspace");
+   userspace_init();
+   
 }// kernel_init
 
 extern void trap_handler() {
