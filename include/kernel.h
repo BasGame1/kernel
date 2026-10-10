@@ -50,9 +50,12 @@ extern void clear_screen();
 extern void print_character(char *message);
 
 extern void print_asccii_art(void);
-extern static bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len)
+struct ext2_dir_entry;
+extern bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len);
 extern char *concat(char *hardcoded_text, char *reason);
+extern void *memcpy(void *dest, const void *src, size_t n);
 extern int strcmp(const char *s1, const char *s2);
+extern void *memset(void *dest, int val, size_t len);
 extern size_t parse_number(char *str);
 extern uint32_t round_page(uint32_t number, uint32_t page);
 extern void print_hex(uint32_t val);
@@ -71,6 +74,17 @@ extern int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write);
 extern uint32_t probe_mmio();
 extern void ext2_read_block(uint32_t block, void *buffer);
 extern void ext2_write_block(uint32_t block, void *buffer);
-extern void init_ext2(void);
+struct ext2_inode;
+extern uint32_t ext2_read_inode(uint32_t inode_no, struct ext2_inode *out);
+extern uint32_t ext2_write_inode(uint32_t inode_no, const struct ext2_inode *in);
+extern uint32_t ext2_lookup(uint32_t dir_inode_no, const char *name);
+extern uint32_t ext2_resolve_path(const char *path);
+typedef void (*ext2_dir_cb)(const char *name, uint32_t name_len, uint32_t inode, uint8_t file_type);
+extern int ext2_iterate_dir(const char *path, ext2_dir_cb callback);
+extern int ext2_list_dir(const char *path);
+extern int ext2_read(const char *path, void *buffer, uint32_t count, uint32_t offset);
+extern int ext2_write(const char *path, const void *buffer, uint32_t count, uint32_t offset);
+extern int ext2_update(const char *path, uint32_t mode, uint32_t mtime);
+extern int ext2_remove(const char *path);
 
 #endif
