@@ -91,7 +91,7 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
 
    if (trap_reason > 15) {
       fataln("trap reason is bigger than 15");
-      return;
+      return frame;
    }
    
    if (is_hardware) {
@@ -99,7 +99,7 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
    } else {
       if (trap_reason == 8) {
          kcall_analyze(frame);
-         return;
+         return schedule(frame);
       } else {
          exception_handlers[trap_reason]();
       }// if trap reason
