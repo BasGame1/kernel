@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "../include/hardware.h"
+#include "../include/kernel.h"
 #include "../include/userspace.h"
 
 static uint32_t virtio_base = 0;
