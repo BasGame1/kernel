@@ -19,5 +19,13 @@ void enter_userspace(uintptr_t entry, uintptr_t user_stack) {
    state |= (1 << 7);
    asm volatile("csrw mstatus, %0" :: "r"(state));
    asm volatile("csrw mepc, %0" :: "r"(entry));
+   #ifdef __DEBUG__
+      uintptr_t entry1;
+      uint32_t process1_id = create_process(entry1, 0);
+      uintptr_t entry2;
+      uint32_t process2_id = create_process(entry2, 1);
+      uintptr_t entry3;
+      uint32_t process3_id = create_process(entry3, 2);
+   #endif
    _enteruserspace(user_stack);
 }// enter_userspace
