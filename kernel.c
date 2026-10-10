@@ -83,7 +83,7 @@ extern void kernel_init() {
    
 }// kernel_init
 
-extern void trap_handler(struct trap_frame *frame) {
+extern struct trap_frame *trap_handler(struct trap_frame *frame) {
    uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
    bool is_hardware = (cause & 0x80000000) != 0;
@@ -100,7 +100,9 @@ extern void trap_handler(struct trap_frame *frame) {
       if (trap_reason == 8) {
          kcall_analyze(frame);
          return;
-      }
-      exception_handlers[trap_reason]();
-   }
+      } else {
+         exception_handlers[trap_reason]();
+      }// if trap reason
+   }// if hardware
+   return schedule(frame);
 }// trap_handler
