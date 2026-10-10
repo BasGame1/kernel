@@ -17,4 +17,6 @@ int call_neo(int argc, char **argv);
 int call_memset(int argc, char **argv);
 int call_round(int argc, char **argv);
 
+void ls(char *path);
+void *memcpy(void *dest, const void *src, size_t n);
 #endif
