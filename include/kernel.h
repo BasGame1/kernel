@@ -80,16 +80,17 @@ extern uint32_t ext2_write_inode(uint32_t inode_no, const struct ext2_inode *in)
 extern uint32_t ext2_lookup(uint32_t dir_inode_no, const char *name);
 extern uint32_t ext2_resolve_path(const char *path);
 typedef void (*ext2_dir_cb)(const char *name, uint32_t name_len, uint32_t inode, uint8_t file_type);
-extern int ext2_iterate_dir(const char *path, ext2_dir_cb callback);
-extern int ext2_list_dir(const char *path);
-extern int ext2_read(const char *path, void *buffer, uint32_t count, uint32_t offset);
-extern int ext2_write(const char *path, const void *buffer, uint32_t count, uint32_t offset);
-extern int ext2_update(const char *path, uint32_t mode, uint32_t mtime);
-extern int ext2_remove(const char *path);
+extern uint32_t ext2_iterate_dir(const char *path, ext2_dir_cb callback);
+extern uint32_t ext2_list_dir(const char *path);
+extern uint32_t ext2_read(const char *path, void *buffer, uint32_t count, uint32_t offset);
+extern uint32_t ext2_write(const char *path, const void *buffer, uint32_t count, uint32_t offset);
+extern uint32_t ext2_update(const char *path, uint32_t mode, uint32_t mtime);
+extern uint32_t ext2_remove(const char *path);
 
 extern uint32_t sys_ipc_send(dest_pid, message_ptr);
 extern uint32_t sys_ipc_recv(src_pid, message_buf);
 extern uint32_t sys_ipc_call(dest_pid, msg, reply);
 extern void sys_map_device(phys_addr, virt_addr);
 extern void test_call();
+
 #endif
