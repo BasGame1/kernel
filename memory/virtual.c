@@ -35,7 +35,7 @@ void init_virtual_memory() {
    uint32_t address = start_memory;
    uint32_t end_address = get_end_of_memory();
    while (address < end_address) {
-      map_virtual_memory(root_directory, address, address, 14);
+      map_virtual_memory(root_directory, address, address, (PTE_RWX | PTE_U));
       address += 0x1000; // 4096      
    }// while
    successn("Mapped the virtual addresses\n");
@@ -49,7 +49,7 @@ void init_virtual_memory() {
    
    uint32_t i = START_HARDWARE_ADDRESS;
    while (i < END_HARDWARE_ADDRESS) {
-      map_virtual_memory(root_directory, i, i, 14);
+      map_virtual_memory(root_directory, i, i, 15);
       i += 0x1000;
    } // while to loop for mapping every hardware address
    successn("Successfully mapped the address of physical hardware to virtual addresses\n");
