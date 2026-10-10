@@ -1,5 +1,10 @@
+#include <stddef.h>
+#include <stdint.h>
+
 #ifndef __USERSPACE_H
 #define __USERSPACE_H
+
+#define print(message) print_character(message)
 
 extern void fatal(char *reason);
 extern void debug(char *reason);
@@ -37,4 +42,15 @@ extern int update(const char *path, uint32_t mode, uint32_t mtime);
 extern int remove(const char *path);
 extern int write(const char *path, const void *buffer, uint32_t count, uint32_t offset);
 extern int read(const char *path, void *buffer, uint32_t count, uint32_t offset);
+
+extern void enter_userspace(uintptr_t entry, uintptr_t user_stack_top);
+extern void test_call(void);
+
+extern uint32_t sys_ipc_send(uint32_t dest_pid, void *message_ptr);
+extern uint32_t sys_ipc_recv(uint32_t src_pid, void *message_buf);
+extern uint32_t sys_ipc_call(uint32_t dest_pid, void *msg, void *reply);
+extern void sys_map_device(uintptr_t phys_addr, uintptr_t virt_addr);
+
+extern void test_user_program(void);
+extern void userspace_init(void);
 #endif

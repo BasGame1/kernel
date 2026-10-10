@@ -2,6 +2,7 @@
 #define __SHELL_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 extern void init_shell(void);
@@ -16,6 +17,8 @@ extern void call_error(char *command);
 extern int call_neo(int argc, char **argv);
 extern int call_memset(int argc, char **argv);
 extern int call_round(int argc, char **argv);
+extern void call_ls(int argc, char **argv);
+extern void call_memcpy(int argc, char **argv);
 
 extern void ls(char *path);
 extern void *memcpy(void *dest, const void *src, size_t n);
