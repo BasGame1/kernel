@@ -32,7 +32,7 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
 void init_virtual_memory() {
    uintptr_t *root_directory = (uintptr_t *) allocate_memory();
    memset(root_directory,0,4096);
-   uint32_t address = start_memory;
+   uint32_t address = START_MEMORY;
    uint32_t end_address = get_end_of_memory();
    while (address < end_address) {
       map_virtual_memory(root_directory, address, address, (PTE_RWX | PTE_U));
