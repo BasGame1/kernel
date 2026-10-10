@@ -13,3 +13,6 @@ qemu*.core
 vm/
 *.img
 *.log
+#Ignore docs/ for now
+docs/
+include/gen
