@@ -97,4 +97,39 @@ uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr);
 uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf);
 uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply);
 
+#define MAX_PROCESSES 16    
+#define KCALL_YIELD 0
+#define KCALL_IPC_SEND 1
+#define KCALL_IPC_RECV 2
+#define KCALL_IPC_CALL 3
+#define SYSTEM_GID 0
+#define MIN_ID 64
+#define MAX_ID 1024
+
+typedef enum {
+   PROCESS_UNUSED = 0,
+   PROCESS_READY,
+   PROCESS_RUNNING,
+   PROCESS_BLOCKED_SEND,
+   PROCESS_BLOCKED_RECV
+} p_state_t;
+struct process {
+   uint32_t pid;
+   uint32_t gid;
+   p_state_t state;
+   uintptr_t kernel_stack;
+   uintptr_t user_stack;
+   struct trap_frame *frame;
+   uint32_t ipc_target_pid;
+   void *ipc_msg_buf;
+};
+struct trap_frame *schedule(struct trap_frame *current_frame);
+struct process processes[MAX_PROCESSES];
+
+extern bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid);
+extern uint32_t create_process(void *entry, uint32_t gid);
+extern uint32_t get_free_pid();
+extern struct get_proccess_by_pid(uint32_t pid);
+extern void schedule(void *current_frame);
+
 #endif
