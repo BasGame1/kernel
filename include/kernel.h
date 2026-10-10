@@ -87,4 +87,9 @@ extern int ext2_write(const char *path, const void *buffer, uint32_t count, uint
 extern int ext2_update(const char *path, uint32_t mode, uint32_t mtime);
 extern int ext2_remove(const char *path);
 
+extern uint32_t sys_ipc_send(dest_pid, message_ptr);
+extern uint32_t sys_ipc_recv(src_pid, message_buf);
+extern uint32_t sys_ipc_call(dest_pid, msg, reply);
+extern void sys_map_device(phys_addr, virt_addr);
+extern void test_call();
 #endif
