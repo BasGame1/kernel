@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../../../include/shell.h"
 #include "../../../include/kernel.h"
 
 void ls(char *path) {
