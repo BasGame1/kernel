@@ -5,8 +5,10 @@
 
 trap_vector:
     addi sp, sp, -128
-
     sw x1, 4(sp)
+    csrr x1, mepc
+    sw x1, 0(sp)
+    
     sw x2, 8(sp)
     sw x3, 12(sp)
     sw x4, 16(sp)
@@ -37,8 +39,13 @@ trap_vector:
     sw x29, 116(sp)
     sw x30, 120(sp)
     sw x31, 124(sp)
-
+    
+    mv a0, sp
     call trap_handler
+    
+    lw x1, 0(sp)
+    csrw mepc, x1
+
     lw x1, 4(sp)
     lw x2, 8(sp)
     lw x3, 12(sp)
