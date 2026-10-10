@@ -73,6 +73,8 @@ extern uint32_t create_process(void *entry, uint32_t gid);
 extern uint32_t get_free_pid();
 extern struct get_proccess_by_pid(uint32_t pid);
 extern void schedule(void *current_frame);
+extern uint32_t get_same_status_pid(uint32_t pid, uint32_t state);
+extern struct get_proccess_by_frame(void *frame)
 
 struct ext2_dir_entry;
 
