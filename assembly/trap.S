@@ -4,12 +4,14 @@
 .type trap_vector, @function
 
 trap_vector:
+
+    csrrw sp, mscratch, sp
     addi sp, sp, -128
     sw x1, 4(sp)
     csrr x1, mepc
     sw x1, 0(sp)
-    
-    sw x2, 8(sp)
+    csrr x1, mscratch
+    sw x1, 8(sp)
     sw x3, 12(sp)
     sw x4, 16(sp)
     sw x5, 20(sp)
@@ -42,12 +44,12 @@ trap_vector:
     
     mv a0, sp
     call trap_handler
+    mv sp, a0
     
     lw x1, 0(sp)
     csrw mepc, x1
 
     lw x1, 4(sp)
-    lw x2, 8(sp)
     lw x3, 12(sp)
     lw x4, 16(sp)
     lw x5, 20(sp)
@@ -77,5 +79,8 @@ trap_vector:
     lw x29, 116(sp)
     lw x30, 120(sp)
     lw x31, 124(sp)
+    
     addi sp, sp, 128
+    csrw mscratch, sp
+    lw sp, -120(sp)
     mret
