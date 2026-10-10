@@ -15,7 +15,8 @@ handler_t interrupt_handlers[16];
 handler_t exception_handlers[16];
 
 extern void trap_vector();
-extern void trap_handler();
+struct trap_frame;
+extern void trap_handler(struct trap_frame *frame);
 extern void init_traps();
 
 extern void init_memory(void);
