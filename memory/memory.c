@@ -55,10 +55,6 @@ void divide_memory(uintptr_t start, uintptr_t end) {
    infon("Dividing memory in pages");
    current_block = start;
    while (current_block < end) {
-      #ifdef __DEBUG__
-          debug("Looping, actual block is: ");
-          debugn((char *) current_block);
-      #endif
       uintptr_t *current_page = (uintptr_t *)current_block;
       *current_page = (uintptr_t) head;
       head = (uintptr_t *) current_block;
