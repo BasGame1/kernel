@@ -12,6 +12,8 @@ extern uintptr_t start_memory;
 
 /* Implementation of SV32 for virtual memory */
 
+uintptr_t *root_directory = 0;
+
 void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, uintptr_t physical_address, uint32_t flags) {
    uint32_t vpn = (virtual_address >> 22) & 0x3FF;
    uint32_t pte = root_directory[vpn];
@@ -30,7 +32,7 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
 }// map_virtual_memory
 
 void init_virtual_memory() {
-   uintptr_t *root_directory = (uintptr_t *) allocate_memory();
+   root_directory = (uintptr_t *) allocate_memory();
    memset(root_directory,0,4096);
    uint32_t address = START_MEMORY;
    uint32_t end_address = get_end_of_memory();
