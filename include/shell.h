@@ -4,19 +4,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void init_shell(void);
-void wait_command(void);
-int check_command(char *full_command);
+extern void init_shell(void);
+extern void wait_command(void);
+extern int check_command(char *full_command);
 
-void call_help(void);
-void call_info(void);
-void call_version(void);
-void call_error(char *command);
+extern void call_help(void);
+extern void call_info(void);
+extern void call_version(void);
+extern void call_error(char *command);
 
-int call_neo(int argc, char **argv);
-int call_memset(int argc, char **argv);
-int call_round(int argc, char **argv);
+extern int call_neo(int argc, char **argv);
+extern int call_memset(int argc, char **argv);
+extern int call_round(int argc, char **argv);
 
-void ls(char *path);
-void *memcpy(void *dest, const void *src, size_t n);
+extern void ls(char *path);
+extern void *memcpy(void *dest, const void *src, size_t n);
+
 #endif
