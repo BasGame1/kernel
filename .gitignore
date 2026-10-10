@@ -12,3 +12,4 @@ qemu*.core
 #Until it is finished, ignore tails and vm
 vm/
 *.img
+*.log
