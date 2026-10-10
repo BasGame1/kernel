@@ -56,11 +56,13 @@ extern void kernel_init() {
    }// if to see result
    #endif
    
-   /* filesystem init */
-   infon("Starting filesystem");
-   init_fs();
-   infon("Starting ext2 fs");
-   init_ext2();
+  /*
+   * // filesystem init
+   *infon("Starting filesystem");
+   *init_fs();
+   *infon("Starting ext2 fs");
+   *init_ext2();
+   */
    
    /* 
     * shell init
@@ -81,6 +83,19 @@ extern void kernel_init() {
    infon("Starting userspace");
    userspace_init();
    
+   /* screen init */
+   create_screen_process();
+   
+   /* keyboard init */
+   create_keyboard_process();
+   
+   /* virtio init */
+   create_virtio_process();
+   
+   /* fs init */
+   #ifdef __USE_EXT2__
+      // create_ext2_process();
+   #endif
 }// kernel_init
 
 extern struct trap_frame *trap_handler(struct trap_frame *frame) {
