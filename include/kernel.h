@@ -103,4 +103,8 @@ extern void free_memory(uintptr_t *current_full_page);
 
 extern void test_user_program(void);
 extern void userspace_init(void);
+
+extern void create_virtio_process(void);
+extern void create_screen_process(void);
+extern void create_keyboard_process(void);
 #endif

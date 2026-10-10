@@ -30,34 +30,80 @@ void kcall_analyze(struct trap_frame *frame) {
           }// if check permission
           frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
           break;
+       case PKCALL_MAP_DEVICE: {
+          struct process *curr = get_process_by_pid((uint32_t)current_pid);
+          if (!curr) {
+             frame->a0 = (uint32_t)-1;
+             break;
+          }// if check process
+          uint32_t sid = frame->a2;
+          if (!verify_pkcall(curr->gid, sid)) {
+             errorn("pkcall rejected for invalid or incorrect sid");
+             frame->a0 = (uint32_t)-1;
+             break;
+          }// if check pkcall
+          frame->a0 = pkcall_map_device(frame->a0, frame->a1);
+          break;
+       }// case PKCALL_MAP_DEVICE
        default:
-          errorn("Unkown Kcall");
+          errorn("Unkown kcall");
           frame->a0 = (uint32_t)-1;
           break;
    }// switch
 }// kcall_analize
 
-/* Kernel-side implementations (run in M-mode) */
+/* Kernel */
 
 uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr) {
-   (void)dest_pid;
-   (void)message_ptr;
-   return 0;
+   struct process *curr = get_process_by_pid((uint32_t)current_pid);
+   struct process *dest = get_process_by_pid(dest_pid);
+   if (!dest || !curr) {
+      return (uint32_t)-1;
+   }// if
+   if (dest->state == PROCESS_BLOCKED_RECV) {
+      dest->ipc_msg_buf = message_ptr;
+      dest->state = PROCESS_READY;
+      dest->frame->a0 = (uint32_t)current_pid;
+      return 0;
+   } else {
+      curr->state = PROCESS_BLOCKED_SEND;
+      curr->ipc_target_pid = dest_pid;
+      curr->ipc_msg_buf = message_ptr;
+      return 0;
+   }// if
 }// kcall_ipc_send
 
 uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf) {
-   (void)src_pid;
-   (void)message_buf;
+   struct process *curr = get_process_by_pid((uint32_t)current_pid);
+   if (!curr) {
+      return (uint32_t)-1;
+   }// if
+   for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
+      if (processes[i].state == PROCESS_BLOCKED_SEND && processes[i].ipc_target_pid == curr->pid) {
+         if (src_pid == 0 || processes[i].pid == src_pid) {
+            curr->ipc_msg_buf = processes[i].ipc_msg_buf;
+            processes[i].state = PROCESS_READY;
+            processes[i].frame->a0 = 0;
+            return processes[i].pid;
+         }// if match
+      }// if blocked sender
+   }// for
+   curr->state = PROCESS_BLOCKED_RECV;
+   curr->ipc_msg_buf = message_buf;
    return 0;
 }// kcall_ipc_recv
 
 uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
-   (void)dest_pid;
-   (void)msg;
-   return (uint32_t)(uintptr_t)reply;
+   kcall_ipc_send(dest_pid, msg);
+   struct process *curr = get_process_by_pid((uint32_t)current_pid);
+   if (curr) {
+      curr->state = PROCESS_BLOCKED_RECV;
+      curr->ipc_msg_buf = reply;
+   }// if
+   return 0;
 }// kcall_ipc_call
 
-/* User-side wrapper functions (called by user processes in U-mode) */
+/* Userspace */
 
 uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr) {
    register uint32_t a7 asm("a7") = KCALL_IPC_SEND;

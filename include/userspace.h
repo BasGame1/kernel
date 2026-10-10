@@ -16,6 +16,7 @@
 #define KCALL_IPC_SEND 1
 #define KCALL_IPC_RECV 2
 #define KCALL_IPC_CALL 3
+#define PKCALL_MAP_DEVICE 10
 
 extern void fatal(char *reason);
 extern void debug(char *reason);
@@ -31,6 +32,8 @@ extern void printn(char *message);
 extern void start_screen(void);
 extern void clear_screen();
 extern void print_character(char *message);
+
+extern void printu(char *message);
 
 struct ext2_dir_entry;
 extern void print_asccii_art(void);
@@ -64,6 +67,10 @@ extern void sys_map_device(uintptr_t phys_addr, uintptr_t virt_addr);
 
 extern void test_user_program(void);
 extern void userspace_init(void);
+
+extern uint32_t pkcall_map_device(uintptr_t phys_addr, uintptr_t virt_addr);
+extern bool verify_pkcall(uint32_t gid, uint32_t sid);
+extern uint32_t generate_sid(uint32_t gid, uintptr_t entry);
 
 struct trap_frame {
    uint32_t mepc;
@@ -111,6 +118,7 @@ typedef enum {
 struct process {
    uint32_t pid;
    uint32_t gid;
+   uint32_t sid;
    p_state_t state;
    uintptr_t kernel_stack;
    uintptr_t user_stack;

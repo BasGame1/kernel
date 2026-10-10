@@ -84,7 +84,8 @@ uint32_t create_process(void *entry, uint32_t gid) {
    memset(frame, 0, sizeof(struct trap_frame));
    frame->mepc = (uint32_t)(uintptr_t)entry;
    frame->sp = user_stack;
-
+   
+   processes[unoccupied_process].sid = generate_sid(gid, (uintptr_t)entry);
    processes[unoccupied_process].pid = free_pid;
    processes[unoccupied_process].gid = gid;
    processes[unoccupied_process].state = PROCESS_READY;

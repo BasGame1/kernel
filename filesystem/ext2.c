@@ -3,6 +3,7 @@
 #include "../include/hardware.h"
 #include "../include/kernel.h"
 #include "../include/userspace.h"
+#include "../include/gid.h"
 
 static uint32_t ext2_block_size = 1024;
 static uint32_t ext2_inode_table_block = 0;
@@ -556,3 +557,17 @@ int ext2_remove(const char *path) {
    ext2_write_inode(target_ino, &target_inode);
    return 0;
 }
+
+void create_ext2_process() {
+   printu("Starting ext2 process");
+   uint32_t pid = create_process((void *)init_ext2, FS_GID);
+   struct process *ext2_process = get_process_by_pid(pid);
+   if (keyboard_process) {
+      uint32_t gid = ext2_process->gid;
+      uint32_t sid = generate_sid(gid, (uintptr_t)init_ext2);
+      ext2_process->sid = sid;
+   }// if
+   pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
+   pkcall_map_device(UART_STATUS, UART_STATUS);
+   printu("keyboard process started");
+}// create_screen_process
