@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "../include/kernel.h"
+#include "../include/userspace.h"
 
 extern void fatal(char *reason);
 extern char* concat(char *hardcoded_text, char *reason);

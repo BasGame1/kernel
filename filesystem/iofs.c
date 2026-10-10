@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include "../include/kernel.h"
-#include "../include/iofs.h"
+#include "../include/userspace.h"
 
 /* Use ext2 as default filesystem */
 

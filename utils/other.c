@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 #include "../include/hardware.h"
-#include "../include/kernel.h"
+#include "../include/userspace.h"
 
 bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len) {
    if (entry == NULL || name == NULL) return false;

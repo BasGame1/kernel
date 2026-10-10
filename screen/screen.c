@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "../include/kernel.h"
+#include "../include/userspace.h"
 #include "../include/hardware.h"
 
 void print_character(char *message) {
