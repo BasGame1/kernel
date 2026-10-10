@@ -115,17 +115,21 @@ void call_version(void) {
    call_info();
 }// call_version
 
-void call_ls(argc, argv) {
-   if (argc != 1) {
-      ls(argv);
+void call_ls(int argc, char **argv) {
+   if (argc > 1) {
+      ls(argv[1]);
    } else {
-      errorn("ls should only have 1 arg");
-   }// if
-}// call_ls
-void call_memcpy(argc, argv) {
-   if (argc != 3) {
-      memcpy(argv[1], argv[2], argv[3]);
+      ls("/");
+   }
+}
+
+void call_memcpy(int argc, char **argv) {
+   if (argc == 4) {
+      uintptr_t dest = (uintptr_t)parse_number(argv[1]);
+      uintptr_t src = (uintptr_t)parse_number(argv[2]);
+      size_t n = parse_number(argv[3]);
+      memcpy((void *)dest, (const void *)src, n);
    } else {
-      errorn("ls should only have 3 args");
-   }// if
-}// call_memcpy
+      errorn("memcpy should have 3 args: <dest> <src> <size>");
+   }
+}
