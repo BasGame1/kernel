@@ -50,9 +50,9 @@ int check_command(char *full_command) {
       clear_screen();
    } else if (strcmp(command, "logo") == 0) {
       print_asccii_art();
-   else if (strcmp(command, "ls") == 0) {
+   } else if (strcmp(command, "ls") == 0) {
       call_ls(argc, argv);
-   else if (strcmp(command, "memcpy") == 0) {
+   } else if (strcmp(command, "memcpy") == 0) {
       call_memcpy(argc, argv);
    } else if (strcmp(command, "exit") == 0) {
       return 1;
