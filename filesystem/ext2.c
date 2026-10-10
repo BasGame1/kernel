@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "../include/hardware.h"
+#include "../include/kernel.h"
 #include "../include/userspace.h"
 
 static uint32_t ext2_block_size = 1024;
@@ -99,20 +100,22 @@ void init_ext2() {
       }// if to check if value is not 0
       offset += entry->rec_len;
    }// while
-
-   info("Testing ext2_list_dir(\"/\"):\n");
-   ext2_list_dir("/");
-
-   static char test_file_buf[128];
-   int r = ext2_read("/hello.txt", test_file_buf, 127, 0);
-   if (r > 0) {
-      test_file_buf[r] = '\0';
-      success("Read /hello.txt: ");
-      print_character(test_file_buf);
-      print_character("\n");
-   } else {
-      errorn("Failed to read /hello.txt");
-   }
+   #ifdef __DEBUG__
+     debugn("Testing ext2_list_dir(\"/\"):\n");
+     ext2_list_dir("/");
+     #ifdef __QEMU__
+        static char test_file_buf[128];
+        int r = ext2_read("/hello.txt", test_file_buf, 127, 0);
+        if (r > 0) {
+           test_file_buf[r] = '\0';
+           success("Read /hello.txt: ");
+           print_character(test_file_buf);
+           print_character("\n");
+        } else {
+           errorn("Failed to read /hello.txt");
+        }
+     #endif
+   #endif
 }// init_ext2
 
 uint32_t ext2_read_inode(uint32_t inode_no, struct ext2_inode *out) {
