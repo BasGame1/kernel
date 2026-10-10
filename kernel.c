@@ -34,9 +34,9 @@ extern void kernel_init() {
    exception_handlers[7] = handle_store_access_error;
    interrupt_handlers[7] = handle_clock_error;
    exception_handlers[8] = test_call; // test kernel calls
-   exception_handlers[12] = handle_load_page_error;
-   exception_handlers[13] = handle_store_page_error;
-   exception_handlers[15] = handle_instruction_page_error;
+   exception_handlers[12] = handle_instruction_page_error;
+   exception_handlers[13] = handle_load_page_error;
+   exception_handlers[15] = handle_store_page_error;
    asm volatile("csrw mtvec, %0" :: "r"(trap_vector));
    successn("Trap Handlers Started");
    
@@ -83,7 +83,7 @@ extern void kernel_init() {
    
 }// kernel_init
 
-extern void trap_handler() {
+extern void trap_handler(struct trap_frame *frame) {
    uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
    bool is_hardware = (cause & 0x80000000) != 0;
@@ -97,6 +97,10 @@ extern void trap_handler() {
    if (is_hardware) {
       interrupt_handlers[trap_reason]();
    } else {
+      if (trap_reason == 8) {
+         kcall_analyze(frame);
+         return;
+      }
       exception_handlers[trap_reason]();
    }
 }// trap_handler
