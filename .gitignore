@@ -16,3 +16,4 @@ vm/
 #Ignore docs/ for now
 docs/
 include/gen
+crypto/
