@@ -46,23 +46,23 @@ uint32_t probe_mmio() {
      if (*version == 1) {
         info("Address: "); 
         print_hex(i);
-        infon(" is legacy");
+        printn(" is legacy");
         is_legacy = 1;
      } else if (*version == 2) {
         info("Address: ");
         print_hex(i);
-        infon(" is modern");
+        printn(" is modern");
         is_modern = 1;
      }// using 2 vars instead of 1 to not confunse myself in the future
      if (*deviceid == 1) {
-        printu("Address: ");
-        printu((char *)i);
-        printu("Is not block device");
+        info("Address: ");
+        print((char *)i);
+        printn("Is not block device");
         is_network = 1;
      } else if (*deviceid == 2) {
-        printu("Address: ");
-        printu((char*)i);
-        printu("Is block device");
+        info("Address: ");
+        print((char*)i);
+        printn("Is block device");
         is_block = 1;
         break;
      }// same about 2 vars
@@ -76,7 +76,7 @@ uint32_t probe_mmio() {
 
 int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write) {
    if (virtio_base == 0) {
-      printu("error, virtio disk was not initialized");
+      errorn("virtio disk was not initialized");
       return -1;
    }// if to check if init virtio
    disk_req.type = is_write ? VIRTIO_BLK_T_OUT : VIRTIO_BLK_T_IN;
@@ -115,7 +115,7 @@ int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write) {
 void init_fs() {
    uint32_t address = probe_mmio();
    if (address == 0) {
-      printu("fatal error, no addresses found");
+      fataln("no addresses found");
       return;
    }// if check if no addresses found
    virtio_base = address;
@@ -137,7 +137,7 @@ void init_fs() {
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_SEL) = 0;
    uint32_t max_queue = *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_NUM_MAX);
    if (max_queue == 0) {
-      printu("fatal error, queue not supported");
+      fataln("Queue not supported");
    }// if to see for support for queue
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_NUM) = VIRTQ_NUM;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DESC_LOW) = (uint32_t)(uintptr_t)&queue_desc[0];
@@ -148,20 +148,20 @@ void init_fs() {
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DEVICE_HIGH) = 0;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_READY) = 1;
    *status = 1 | 2 | 8 | 4;
-   printu("Virtio block device was successfull");
+   successn("Virtio block device was successfull");
    #ifdef __DEBUG__
    // Test if sector is read
    static uint8_t sector_buffer[512];
    if (virtio_read_sector(0, sector_buffer) == 0) {
-      printu("Sector 0 read successful");
+      successn("Sector 0 read successful");
    } else {
-      printu("Sector 0 read failed");
+      errorn("Sector 0 read failed");
    }
    #endif
 }// init_fs
 
 void create_virtio_process() {
-   printu("Starting virtio process");
+   infon("Starting virtio process");
    uint32_t pid = create_process((void *)init_fs, VIRTIO_GID);
    struct process *virtio_process = get_process_by_pid(pid);
    if (virtio_process) {
@@ -174,5 +174,5 @@ void create_virtio_process() {
       pkcall_map_device(i, i);
       i += 4096;
    }// while
-   printu("Virtio process started");
+   successn("Virtio process started");
 }// create_virtio_process

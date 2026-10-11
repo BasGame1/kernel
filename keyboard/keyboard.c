@@ -65,7 +65,7 @@ bool test_keyboard() {
 }// test_keyboard
 
 void create_keyboard_process() {
-   printu("Starting keyboard process");
+   infon("Starting keyboard process");
    uint32_t pid = create_process((void *)get_input, KEYBOARD_GID);
    struct process *keyboard_process = get_process_by_pid(pid);
    if (keyboard_process) {
@@ -75,5 +75,5 @@ void create_keyboard_process() {
    }// if
    pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
    pkcall_map_device(UART_STATUS, UART_STATUS);
-   printu("keyboard process started");
+   successn("keyboard process started");
 }// create_keyboard_process

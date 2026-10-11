@@ -24,13 +24,24 @@ void clear_screen() {
    print_character("\033[2J\033[H");
 }// clear_screen
 
+void screen_driver_process() {
+   while (1) {
+      char msg_buf[64];
+      uint32_t sender = user_ipc_recv(0, msg_buf);
+      if (sender != (uint32_t)-1) {
+         print_character(msg_buf);
+         user_ipc_send(sender, (void *)0);
+      }// if
+   }// while
+}// screen_driver_process
+
 void create_screen_process() {
    infon("Starting screen process");
-   uint32_t pid = create_process((void *)start_screen, SCREEN_GID);
+   uint32_t pid = create_process((void *)screen_driver_process, SCREEN_GID);
    struct process *screen_process = get_process_by_pid(pid);
    if (screen_process) {
       uint32_t gid = screen_process->gid;
-      uint32_t sid = generate_sid(gid, (uintptr_t)start_screen);
+      uint32_t sid = generate_sid(gid, (uintptr_t)screen_driver_process);
       screen_process->sid = sid;
    }// if
    pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
@@ -42,11 +53,5 @@ void start_screen() {
    clear_screen();
    //print_character("[Screen Starting]\n");
    print_asccii_art();
-   while (1) {
-      char msg_buf[64];
-      uint32_t sender = user_ipc_recv(0, msg_buf);
-      if (sender != (uint32_t)-1) {
-         print_character(msg_buf);
-      }// if
-   }// while
 }// start_screen
+
