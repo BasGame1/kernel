@@ -79,6 +79,9 @@ extern void kernel_init() {
       #endif
    #endif
    
+   /* print init */
+   create_print_process();
+
    /* screen init */
    create_screen_process();
    
