@@ -93,7 +93,20 @@ extern void kernel_init() {
    
    /* fs init */
    #ifdef __USE_EXT2__
-      // create_ext2_process();
+      create_ext2_process();
+   #endif
+   
+   #ifndef __USE_NTAR__
+      /* Dir creation */
+      create_dirs();
+      create_slot_dirs();
+   #else
+     //TODO, add ntar
+   #endif
+   
+   #if defined(__USE_AB__) || defined(__USE_AB_NO_REBOOT__)
+      /* updates init */
+      create_updates_process()
    #endif
    
    /* userspace init */
