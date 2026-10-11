@@ -60,6 +60,12 @@ struct virtio_blk_req {
    uint64_t sector;
 };
 
+struct virtio_ipc_req {
+   uint32_t cmd;
+   uint32_t sector;
+   void *buffer;
+};
+
 #define EXT2_MAGIC 0xEF53
 
 struct ext2_super_block {
