@@ -87,6 +87,20 @@ extern int ext2_read(const char *path, void *buffer, uint32_t count, uint32_t of
 extern int ext2_write(const char *path, const void *buffer, uint32_t count, uint32_t offset);
 extern int ext2_update(const char *path, uint32_t mode, uint32_t mtime);
 extern int ext2_remove(const char *path);
+extern uint32_t ext2_create_file(const char *path);
+extern uint32_t ext2_mkdir(const char *path);
+extern void kmv(char *origin, char *destiny);
+extern void kcp(char *origin, char *destiny);
+extern void ktouch(char *path);
+extern int kmkdir(const char *path);
+
+extern void create_dirs();
+extern void create_slot_dirs();
+
+extern void shutdown();
+extern void kreboot();
+extern void reboot();
+
 /*
 extern uint32_t sys_ipc_send(dest_pid, message_ptr);
 extern uint32_t sys_ipc_recv(src_pid, message_buf);
@@ -107,4 +121,5 @@ extern void userspace_init(void);
 extern void create_virtio_process(void);
 extern void create_screen_process(void);
 extern void create_keyboard_process(void);
+
 #endif
