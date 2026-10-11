@@ -19,10 +19,13 @@ bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid) {
       errorn("pid is not in use");
       return false;
    }// if
-   if (receiver->gid == SYSTEM_GID || receiver->gid == sender->gid) {
+   if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid) {
       successn("Receiver and sender are on the same gid or receiver is system");
       return true;
-   } else {
+   } else if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid || receiver->gid == KEYBOARD_GID || (receiver->gid == VIRTIO_GID && sender->gid == FS_GID)) {
+       succesn("Interaction is allowed due being an exception");
+       return true;
+    } else {
       errorn("Receiver and sender communication blocked due to different gid");
       return false;
    }// if
