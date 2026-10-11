@@ -123,4 +123,6 @@ extern void create_virtio_process(void);
 extern void create_screen_process(void);
 extern void create_keyboard_process(void);
 
+extern void boot_neo(uintptr_t page_addr, size_t page_size);
+
 #endif

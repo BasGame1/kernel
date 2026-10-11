@@ -11,6 +11,26 @@ extern void kernel_init() {
    start_screen();
    successn("Kernel Starting");
    
+   #ifdef __USE_NEO__
+      /* Boot secure env */
+      uintptr_t heap = allocate_memory;
+      infon("Booting neo, waiting");
+      uint32_t status = boot_neo(heap, 4096);
+      if (status != 0); {
+         errorn("Neo did not boot correctly, pausing");
+         #ifdef __DEBUG__
+            #ifndef __NOSHELL__
+               debugn("Debug shell, exiting will enter in the loop");
+               init_shell();
+            #endif
+            debugn("Enter in forever loop");
+         #endif
+         while (1) {
+            // Pause forever so the error message can be read
+         }// while
+      }// if
+   #endif
+   
    #ifdef __USE_AB__
       /* Update protection */
       update_protection();
