@@ -49,7 +49,17 @@ write_header() {
         echo "#define __${selected_config_upp}__ ${value}" >> "$OUT_HEADER"
     fi
 }
-
+generate_seed() {
+   MONTH="${month:-$(date +%-m)}"
+   DAY="${day:-$(date +%-d)}"
+   TIME_H="${time_h:-$(date +%-H)}"
+   TIME_M="${time_m:-$(date +%-M)}"
+   TIME_S="${time_s:-$(date +%-S)}"
+   PACKED_TIME=$(( (MONTH << 22) | (DAY << 17) | (TIME_H << 12) | (TIME_M << 6) | TIME_S ))
+   BUILD_SALT=$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')
+   RAW_MAGIC=$(( (BUILD_SALT << 32) | PACKED_TIME ))  
+   return $RAW_MAGIC
+}
 inspect_file() {
     local i=1
     local lines_file
@@ -70,7 +80,9 @@ inspect_file() {
         key="${key%"${key##*[![:space:]]}"}"
         val="${val#"${val%%[![:space:]]*}"}"
         val="${val%"${val##*[![:space:]]}"}"
-
+        if [ $key == "RANDOM_SEED"] &&  [ $val == 0 ]; then
+           $val = generate_seed()
+        fi
         write_header "$key" "$val"
         ((i++))
     done < "$CONFIG_FILE"
