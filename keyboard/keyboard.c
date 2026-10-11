@@ -64,16 +64,28 @@ bool test_keyboard() {
    return (*uart_status_pointer != 0xFF);
 }// test_keyboard
 
+void keyboard_driver_process(void) {
+   while (1) {
+      char req = 0;
+      uint32_t sender = user_ipc_recv(0, &req);
+      if (sender != (uint32_t)-1) {
+         char c = get_char();
+         char reply[2] = {c, '\0'};
+         user_ipc_send(sender, reply);
+      }// if
+   }// while
+}// keyboard_driver_process
+    
 void create_keyboard_process() {
    infon("Starting keyboard process");
-   uint32_t pid = create_process((void *)get_input, KEYBOARD_GID);
+   uint32_t pid = create_process((void *)keyboard_driver_process, KEYBOARD_GID);
    struct process *keyboard_process = get_process_by_pid(pid);
    if (keyboard_process) {
       uint32_t gid = keyboard_process->gid;
-      uint32_t sid = generate_sid(gid, (uintptr_t)get_input);
+      uint32_t sid = generate_sid(gid, (uintptr_t)keyboard_driver_process);
       keyboard_process->sid = sid;
-   }// if
-   pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
-   pkcall_map_device(UART_STATUS, UART_STATUS);
-   successn("keyboard process started");
+    }// if
+    pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
+    pkcall_map_device(UART_STATUS, UART_STATUS);
+    successn("keyboard process started");
 }// create_keyboard_process
