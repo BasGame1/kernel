@@ -23,7 +23,7 @@ bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid) {
    if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid) {
       successn("Receiver and sender are on the same gid or receiver is system");
       return true;
-   } else if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid || receiver->gid == KEYBOARD_GID || (receiver->gid == VIRTIO_GID && sender->gid == FS_GID)) {
+   } else if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid || receiver->gid == KEYBOARD_GID || (receiver->gid == VIRTIO_GID && sender->gid == FS_GID) || (receiver->gid == FS_GID && sender->gid == UPDATE_PROCESS_GID) || receiver->gid == UPDATE_PROCESS_GID) {
        successn("Interaction is allowed due being an exception");
        return true;
     } else {

@@ -1,8 +1,12 @@
-#include "../include/noab.h"
+#include "../include/noab_update.h"
 
-void install_update(char use_slot, char* file_path) {
-   // update will be install with the os, dont do anything
-   (char) use_slot;
-   (char *) file_path;
+#if !defined(__USE_AB__) && !defined(__USE_AB_NO_REBOOT__)
+
+uint32_t install_update(char use_slot, const char *file_path) {
+   (void)use_slot;
+   (void)file_path;
    return 0;
 }// install_update
+
+#endif
+

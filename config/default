@@ -56,3 +56,6 @@ VERIFY_PKCALL=0 // verifies private kernel calls, so only specific gids can acce
 USE_SID_PROTECTION=0 // add signature protection to the sid (system id), depends on VERIFY_PKCALL
 DISABLE_GID810_PKCALL=0 // revoke the pkcall priviledges to gids 8 to 10, depends on VERIFY_PKCALLS
 RANDOM_SEED=0 // Use a premade seed for the kernel, if equal to 0 one will be assigned at compilation
+GENERATE_CERT=0 // Generates a cert on the kernel that validates the authenticity of the files
+VERIFY_UPDATE=0 // Before applying an update via AB or ABNR, verify the package has correct signature, depends on GENERATE_CERT
+

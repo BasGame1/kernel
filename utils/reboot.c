@@ -5,7 +5,8 @@ void kreboot() {
 }// kreboot
 
 void reboot() {
-   // Reboots whole device
+   infon("Rebooting device");
+   asm volatile("jr %0" :: "r"(0x80000000));
 }// reboot
 
 void shutdown() {

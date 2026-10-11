@@ -779,7 +779,7 @@ uint32_t ext2_create_file(const char *path) {
    }// if
    struct ext2_inode new_inode;
    memset(&new_inode, 0, sizeof(struct ext2_inode));
-   new_inode.inode_mode = 0644;
+   new_inode.inode_mode = 0x81A4;
    new_inode.inode_size = 0;
    new_inode.inode_links_count = 1;
    new_inode.inode_blocks = 0;

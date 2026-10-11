@@ -1,10 +1,10 @@
 CC = riscv64-unknown-elf-gcc
-CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr -mabi=ilp32 -D__QEMU__
+CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr_zifencei -mabi=ilp32 -D__QEMU__
 OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
 TARGET_TESTS = $(OUT_TESTS)/run_tests
-DIRS = assembly clock screen memory utils keyboard shell filesystem userspace
+DIRS = assembly clock screen memory utils keyboard shell filesystem userspace updates
 OBJECTS = $(foreach dir,$(DIRS),$(OUT)/$(dir).o)
 KERNEL_OBJECT = $(OUT)/kernel.o
 ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT)
@@ -12,6 +12,9 @@ TEST_FILES = $(wildcard tests/*.c)
 TEST_OBJECTS = $(patsubst tests/%.c,$(OUT_TESTS)/%.o,$(TEST_FILES))
 LINKER = kernel.ld
 GEN_LINKER = $(OUT)/kernel.ld
+PATCH_GEN = $(OUT)/create_patch
+KERNEL_OLD ?= $(OUT)/kernel.old
+UPDATE_BIN = $(OUT)/update.bin
 
 all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
 
@@ -25,17 +28,25 @@ arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
 arch64: all
 
 NOSHELL_TARGET = $(OUT)/kernel-noshell
-
 noshell: NOSHELL_DIRS = $(filter-out shell,$(DIRS))
 noshell: CFLAGS += -D__NOSHELL__
 noshell: $(OUT) noshell_dirs $(KERNEL_OBJECT) $(NOSHELL_TARGET)
 
-DEBUG_TARGET = $(OUT)/kernel-debug
+update: all $(PATCH_GEN)
+	@if [ ! -f $(KERNEL_OLD) ]; then \
+		echo "Creating baseline $(KERNEL_OLD)"; \
+		cp $(TARGET) $(KERNEL_OLD); \
+	fi
+	$(PATCH_GEN) $(KERNEL_OLD) $(TARGET) $(UPDATE_BIN)
 
+DEBUG_TARGET = $(OUT)/kernel-debug
 debug: CFLAGS += -D__DEBUG__
 debug: $(OUT) dirs $(KERNEL_OBJECT) $(DEBUG_TARGET)
 
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
+
+$(PATCH_GEN): scripts/create_patch.c | $(OUT)
+	gcc -O2 $< -o $@
 
 $(OUT):
 	mkdir -p $(OUT)

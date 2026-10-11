@@ -140,9 +140,9 @@ struct fs_ipc_req {
    char path[64];
 };
 
-struct updates_ipc_req{
+struct updates_ipc_req {
    uint32_t start;
-   uint32_t path;
+   char path[64];
 };
 extern struct process processes[MAX_PROCESSES];
 extern int current_pid;

@@ -11,6 +11,11 @@ extern void kernel_init() {
    start_screen();
    successn("Kernel Starting");
    
+   #ifdef __USE_AB__
+      /* Update protection */
+      update_protection();
+   #endif
+   
    /* memory init */
    infon("Starting MMU");
    init_memory();
@@ -106,7 +111,7 @@ extern void kernel_init() {
    
    #if defined(__USE_AB__) || defined(__USE_AB_NO_REBOOT__)
       /* updates init */
-      create_updates_process()
+      create_update_process();
    #endif
    
    /* userspace init */

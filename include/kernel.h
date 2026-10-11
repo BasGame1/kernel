@@ -90,12 +90,13 @@ extern int ext2_remove(const char *path);
 extern uint32_t ext2_create_file(const char *path);
 extern uint32_t ext2_mkdir(const char *path);
 extern void kmv(char *origin, char *destiny);
-extern void kcp(char *origin, char *destiny);
+extern int kcp(const char *origin, const char *destiny);
 extern void ktouch(char *path);
 extern int kmkdir(const char *path);
 
 extern void create_dirs();
 extern void create_slot_dirs();
+extern void create_update_process(void);
 
 extern void shutdown();
 extern void kreboot();

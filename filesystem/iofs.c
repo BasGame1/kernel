@@ -25,15 +25,19 @@ int kmkdir(const char *path) {
    return ext2_mkdir(path);
 }// mkdir
 
-void kcp(char *origin, char *destiny) {
-   char *buffer[4096];
-   read(origin, buffer, 4096, 0);
-   write(destiny, buffer, 4096, 0);
+int kcp(const char *origin, const char *destiny) {
+   static char buffer[4096];
+   int n = read(origin, buffer, sizeof(buffer), 0);
+   if (n <= 0) {
+      return -1;
+   }// if
+   int w = write(destiny, buffer, (uint32_t)n, 0);
+   return (w == n) ? 0 : -1;
 }// cp
 
 void kmv(char *origin, char *destiny) {
    // horrible mv implementation, ik
-   char *buffer[4096];
+   char buffer[4096];
    read(origin, buffer, 4096, 0);
    write(destiny, buffer, 4096, 0);
    remove(origin);
