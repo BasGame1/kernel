@@ -12,5 +12,6 @@
 // #define 8_GID 8
 // #define 9_GID 9
 // #define 10_GID 10
+#define UPDATE_PROCESS_GID 11
 
 #endif
