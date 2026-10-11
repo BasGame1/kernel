@@ -1,0 +1,58 @@
+########################################################
+#   DEFAULT CONFIG FILE FOR THE KERNEL BUILD SYSTEM    #
+########################################################
+
+# arch
+RISCV=0 // use riscv arch, incompatible with ARM and X86 flags
+ARM=0 // use arm arch, incompatible with RISCV and X86 flags
+X86=0 // use x86 arch, incompatible with RISCV and ARM flags
+32BIT=0 // force 32bit
+
+# emulator & debug flags
+QEMU=0 // use harcoded qemu values
+DEBUG=0 // use debug build
+NOSHELL=0 // deactive primitive, only affects if DEBUG=1
+
+# filesystem
+USE_EXT2=0 // add ext2 support
+USE_DEFAULT_EXT2=0 // use ext2 as default fs
+
+# embedded
+EMBEDDED=0 // strip everything but basic boot sequence, for integrated systems only
+
+# drivers
+USE_DEFAULT_RISCV_SCREEN=0 // force default riscv screen driver
+USE_DEFAULT_KEYBOARD=0 // use default keyboard driver
+
+# dtb
+DTB=0 // use dtb, incompatible with HARCODED_RAM_VALUE and PROBE_RAM 
+
+# multiboot
+USE_MULTIBOOT=0 // use multiboot protocol at boot
+
+# loadable modules
+USE_LOAD_MODULES=0 // lets load modules on the kernel
+
+# antartica
+USE_ANTARTICA=0 // adds total linux compatibility, for replacing linux kernel in GNU/linux
+USE_LINUX_ABI=0 // adds linux scripts compatibility for scripts
+
+# windows vm
+USE_WINDOWS_SUPPORT=0 // adds windows kernel apps support
+
+# ntar
+USE_NTAR=0 // No Trace After Reboot, aka live build
+
+# ram
+PROBE_RAM=1 // probe ram to find the end, incompatible with HARDCODED_RAM_VALUE and DTB
+HARDCODED_RAM_VALUE=0 // use a hardcoded ram value, incompatible with PROBE_RAM and DTB
+
+# ab updates
+USE_AB=0 // adds AB slots for updates
+USE_AB_NO_REBOOT=0 // adds live updates 
+
+# security
+VERIFY_PKCALL=0 // verifies private kernel calls, so only specific gids can access hardware restricted features, desactivating converts pkcalls into normal kcalls with a fancy name
+USE_SID_PROTECTION=0 // add signature protection to the sid (system id), depends on VERIFY_PKCALL
+DISABLE_GID810_PKCALL=0 // revoke the pkcall priviledges to gids 8 to 10, depends on VERIFY_PKCALLS
+RANDOM_SEED=0 // Use a premade seed for the kernel, if equal to 0 one will be assigned at compilation
