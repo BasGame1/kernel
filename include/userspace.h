@@ -17,6 +17,11 @@
 #define KCALL_IPC_RECV 2
 #define KCALL_IPC_CALL 3
 #define PKCALL_MAP_DEVICE 10
+#define KCALL_GET_PID_BY_GID 4
+    
+extern uint32_t get_pid_by_gid(uint32_t gid);
+extern uint32_t user_get_pid_by_gid(uint32_t gid);
+extern void create_print_process(void);
 
 extern void fatal(char *reason);
 extern void debug(char *reason);
