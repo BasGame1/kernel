@@ -1,10 +1,32 @@
+// Makefile
+CONFIG ?= default-riscv
+CONFIG_FILE = $(CURDIR)/config/$(CONFIG)
+
+CONFIG_CC := $(shell grep '^[[:space:]]*CC=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+ifeq ($(origin CC),default)
+ifneq ($(strip $(CONFIG_CC)),)
+CC = $(strip $(CONFIG_CC))
+else
 CC = riscv64-unknown-elf-gcc
-CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr_zifencei -mabi=ilp32 -D__QEMU__
+endif
+endif
+
+CONFIG_USE_ANTARTICA := $(shell grep '^[[:space:]]*USE_ANTARTICA=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+ifeq ($(strip $(CONFIG_USE_ANTARTICA)),1)
+ANTARTICA_DIR = antartica
+CFLAGS_ANTARTICA = -D__USE_ANTARTICA__
+else
+ANTARTICA_DIR =
+CFLAGS_ANTARTICA =
+endif
+
+CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr_zifencei -mabi=ilp32 -D__QEMU__ $(CFLAGS_ANTARTICA)
 OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
 TARGET_TESTS = $(OUT_TESTS)/run_tests
-DIRS = assembly clock screen memory utils keyboard shell filesystem userspace updates
+DIRS = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers $(ANTARTICA_DIR)
+DIRS_ALL = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers antartica
 OBJECTS = $(foreach dir,$(DIRS),$(OUT)/$(dir).o)
 KERNEL_OBJECT = $(OUT)/kernel.o
 ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT)
@@ -20,6 +42,24 @@ all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
 
 qemu: CFLAGS += -D__QEMU__
 qemu: all
+
+arm: CONFIG = default-arm
+arm: all
+
+arm64: CONFIG = default-arm64
+arm64: all
+
+riscv: CONFIG = default-riscv
+riscv: all
+
+riscv64: CONFIG = default-riscv64
+riscv64: all
+
+x86: CONFIG = default-x86
+x86: all
+
+x86_64: CONFIG = default-x86_64
+x86_64: all
 
 run: all
 	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic -drive file=disk.img,if=none,format=raw,id=hd0 -global virtio-mmio.force-legacy=false -device virtio-blk-device,drive=hd0
@@ -45,7 +85,7 @@ debug: $(OUT) dirs $(KERNEL_OBJECT) $(DEBUG_TARGET)
 
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
-$(PATCH_GEN): scripts/create_patch.c | $(OUT)
+$(PATCH_GEN): scripts/c/create_patch.c | $(OUT)
 	gcc -O2 $< -o $@
 
 $(OUT):
@@ -82,7 +122,7 @@ $(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(GEN_LINKER)
 	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS)
 
 clean:
-	@for dir in $(DIRS); do $(MAKE) -C $$dir clean OUT=$(OUT); done
+	@for dir in $(DIRS_ALL); do $(MAKE) -C $$dir clean OUT=$(OUT); done
 	rm -rf $(OUT)
 
-.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell
+.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64
