@@ -19,6 +19,8 @@
 #define PKCALL_MAP_DEVICE 10
 #define KCALL_GET_PID_BY_GID 4
     
+extern uint32_t ext2_mkdir(const char *path);
+
 extern uint32_t get_pid_by_gid(uint32_t gid);
 extern uint32_t user_get_pid_by_gid(uint32_t gid);
 extern void create_print_process(void);
@@ -133,6 +135,15 @@ struct process {
    void *ipc_msg_buf;
 };
 
+struct fs_ipc_req {
+   uint32_t cmd;
+   char path[64];
+};
+
+struct updates_ipc_req{
+   uint32_t start;
+   uint32_t path;
+};
 extern struct process processes[MAX_PROCESSES];
 extern int current_pid;
 
