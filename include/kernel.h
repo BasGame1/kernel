@@ -124,5 +124,25 @@ extern void create_screen_process(void);
 extern void create_keyboard_process(void);
 
 extern void boot_neo(uintptr_t page_addr, size_t page_size);
-
+enum module_status {
+   "READY" = 0;
+   "LOADING";
+   "NOT LOADED";
+   "ERROR";
+};
+struct module {
+   char *name;
+   char author;
+   char version;
+   char description;
+   uint32_t enum module_status;
+   uint32_t id;
+   uint32_t secid; // secure id, generated cryptographically
+   bool is_kernel; // check if runs on mmode or umode (always umode with exceptions)
+   bool is_priv; // if priviledge, get prividlge apis and gid
+   uint32_t sid; // only if priv status
+   uint32_t gid;
+   uint32_t is_hw_access; // if they need hw access (aka, mapping), only for priv
+   bool is_temporal; // unloads with reboot
+};
 #endif
