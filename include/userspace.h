@@ -35,6 +35,7 @@ extern void print_character(char *message);
 
 extern void printu(char *message);
 
+
 struct ext2_dir_entry;
 extern void print_asccii_art(void);
 extern bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *name, uint32_t name_len);
@@ -71,7 +72,7 @@ extern void userspace_init(void);
 extern uint32_t pkcall_map_device(uintptr_t phys_addr, uintptr_t virt_addr);
 extern bool verify_pkcall(uint32_t gid, uint32_t sid);
 extern uint32_t generate_sid(uint32_t gid, uintptr_t entry);
-
+extern uint32_t get_pid_by_gid(uint32_t gid);
 struct trap_frame {
    uint32_t mepc;
    uint32_t ra;
