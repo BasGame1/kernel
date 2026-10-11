@@ -19,12 +19,12 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
    uint32_t pte = root_directory[vpn];
    if ((pte & 1) == 0 ) {
       // Level 2 does not exist
-      infon("Level 2 does not exist, creating\n");
+      infon("Level 2 does not exist, creating");
       uintptr_t *level2_table = (uintptr_t *) allocate_memory();
       memset(level2_table,0,4096);
       root_directory[vpn] = ((uintptr_t)level2_table >> 2) | 1;
       pte = root_directory[vpn];
-      successn("Level 2 table created\n");
+      successn("Level 2 table created");
    }
    uintptr_t *level2_table_pointer = (uintptr_t *) (uintptr_t) ((pte >> 10) << 12);
    uint32_t vpn0 = (virtual_address >> 12) & 0x3FF;
@@ -40,26 +40,26 @@ void init_virtual_memory() {
       map_virtual_memory(root_directory, address, address, (PTE_RWX | PTE_U));
       address += 0x1000; // 4096      
    }// while
-   successn("Mapped the virtual addresses\n");
+   successn("Mapped the virtual addresses");
    
-   infon("Map clit to 0x02000000\n");
+   infon("Map clit to 0x02000000");
    map_virtual_memory(root_directory, 0x02000000, 0x02000000, 14); // map clit
-   successn("Mapping of clit succesfull\n");
-   infon("Map uart to 0x01000000\n");
+   successn("Mapping of clit succesfull");
+   infon("Map uart to 0x01000000");
    map_virtual_memory(root_directory, 0x10000000, 0x10000000, 14); // map uart
-   successn("Mapping of uart succesfull\n");
+   successn("Mapping of uart succesfull");
    
    uint32_t i = START_HARDWARE_ADDRESS;
    while (i < END_HARDWARE_ADDRESS) {
       map_virtual_memory(root_directory, i, i, 15);
       i += 0x1000;
    } // while to loop for mapping every hardware address
-   successn("Successfully mapped the address of physical hardware to virtual addresses\n");
+   successn("Successfully mapped the address of physical hardware to virtual addresses");
    
-   info("Enabling sv32 in the registry\n");
+   info("Enabling sv32 in the registry");
    uint32_t ppn = (uint32_t)(((uintptr_t)root_directory) >> 12);
    uint32_t satp_value = ppn | 0x80000000;
    asm volatile("csrw satp, %0" : : "r" (satp_value));
    asm volatile("sfence.vma zero, zero");
-   successn("Enabled sv32 in the registry\n");
+   successn("Enabled sv32 in the registry");
 }// init_virtual_memory
