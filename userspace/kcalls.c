@@ -146,7 +146,7 @@ void test_call(void) {
 }// test_call
 
 void test_user_program(void) {
-   user_ipc_send(1, (void *)0);
+   user_ipc_send(get_pid_by_gid(5), (void *)0);
    while (1) {
       asm volatile("nop");
    }// while

@@ -28,6 +28,15 @@ bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid) {
    }// if
 }// check_gid_permissions
 
+uint32_t get_pid_by_gid(uint32_t gid) {
+   for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
+      if (processes[i].state != PROCESS_UNUSED && processes[i].gid == gid) {
+         return processes[i].pid;
+      }// if
+   }// for
+   return (uint32_t)-1;
+}// get_pid_by_gid
+
 struct process *get_process_by_pid(uint32_t pid) {
    for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
       if (processes[i].state != PROCESS_UNUSED && processes[i].pid == pid) {
