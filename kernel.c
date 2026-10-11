@@ -79,10 +79,6 @@ extern void kernel_init() {
       #endif
    #endif
    
-   /* userspace init */
-   infon("Starting userspace");
-   userspace_init();
-   
    /* screen init */
    create_screen_process();
    
@@ -96,6 +92,11 @@ extern void kernel_init() {
    #ifdef __USE_EXT2__
       // create_ext2_process();
    #endif
+   
+   /* userspace init */
+   infon("Starting userspace");
+   userspace_init();
+   
 }// kernel_init
 
 extern struct trap_frame *trap_handler(struct trap_frame *frame) {
