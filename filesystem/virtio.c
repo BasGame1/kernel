@@ -160,17 +160,34 @@ void init_fs() {
    #endif
 }// init_fs
 
+void virtio_driver_process(void) {
+   init_fs();
+   while (1) {
+      struct virtio_ipc_req req;
+      uint32_t sender = user_ipc_recv(0, &req);
+      if (sender != (uint32_t)-1) {
+         int status = -1;
+         if (req.cmd == 0) {
+            status = virtio_read_sector(req.sector, req.buffer);
+         } else if (req.cmd == 1) {
+            status = virtio_write_sector(req.sector, req.buffer);
+         }// if
+         user_ipc_send(sender, (void *)(intptr_t)status);
+      }// if
+   }// while
+}// virtio_driver_process
+    
 void create_virtio_process() {
    infon("Starting virtio process");
-   uint32_t pid = create_process((void *)init_fs, VIRTIO_GID);
+   uint32_t pid = create_process((void *)virtio_driver_process, VIRTIO_GID);
    struct process *virtio_process = get_process_by_pid(pid);
    if (virtio_process) {
       uint32_t gid = virtio_process->gid;
-      uint32_t sid = generate_sid(gid, (uintptr_t)init_fs);
+      uint32_t sid = generate_sid(gid, (uintptr_t)virtio_driver_process);
       virtio_process->sid = sid;
    }// if
    uint32_t i = START_HARDWARE_ADDRESS;
-   while ( i < END_HARDWARE_ADDRESS ) {
+   while (i < END_HARDWARE_ADDRESS) {
       pkcall_map_device(i, i);
       i += 4096;
    }// while
