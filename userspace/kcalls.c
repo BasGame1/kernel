@@ -45,6 +45,9 @@ void kcall_analyze(struct trap_frame *frame) {
           frame->a0 = pkcall_map_device(frame->a0, frame->a1);
           break;
        }// case PKCALL_MAP_DEVICE
+       case KCALL_GET_PID_BY_GID:
+          frame->a0 = get_pid_by_gid(frame->a0);
+          break;
        default:
           errorn("Unkown kcall");
           frame->a0 = (uint32_t)-1;
@@ -137,6 +140,13 @@ uint32_t user_yield(void) {
    return a0;
 }// user_yield
 
+uint32_t user_get_pid_by_gid(uint32_t gid) {
+   register uint32_t a7 asm("a7") = KCALL_GET_PID_BY_GID;
+   register uint32_t a0 asm("a0") = gid;
+   asm volatile("ecall" : "+r"(a0) : "r"(a7) : "memory");
+   return a0;
+}// user_get_pid_by_gid
+
 void test_call(void) {
    uintptr_t call;
    asm volatile("csrr %0, mepc" : "=r"(call));
@@ -146,8 +156,8 @@ void test_call(void) {
 }// test_call
 
 void test_user_program(void) {
-   user_ipc_send(get_pid_by_gid(5), (void *)0);
+   printu("Hello from userspace app via print multiplexer!\n");
    while (1) {
-      asm volatile("nop");
+      user_yield();
    }// while
 }// test_user_program
