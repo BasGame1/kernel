@@ -1,9 +1,13 @@
 #include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include "../include/hardware.h"
 #include "../include/kernel.h"
 #include "../include/userspace.h"
 #include "../include/gid.h"
+
+int ext2_virtio_transfer(uint32_t sector, void *buffer, bool is_write);
 
 static uint32_t ext2_block_size = 1024;
 static uint32_t ext2_inode_table_block = 0;
@@ -13,7 +17,7 @@ void ext2_read_block(uint32_t block, void *buffer) {
    uint32_t sectors_per_block = ext2_block_size / 512;
    uint32_t start_sector = block * sectors_per_block;
    for (uint32_t i = 0; i < sectors_per_block; i++) {
-      if (virtio_read_sector(start_sector + i, (uint8_t *)buffer + (i * 512)) != 0) {
+      if (ext2_virtio_transfer(start_sector + i, (uint8_t *)buffer + (i * 512), false) != 0) {
          error("Read failed at sector ");
          print_dec(start_sector + i);
          print_character("\n");
@@ -26,7 +30,7 @@ void ext2_write_block(uint32_t block, void *buffer) {
    uint32_t sectors_per_block = ext2_block_size / 512;
    uint32_t start_sector = block * sectors_per_block;
    for (uint32_t i = 0; i < sectors_per_block; i++) {
-      if (virtio_write_sector(start_sector + i, (uint8_t *)buffer + (i * 512)) != 0) {
+      if (ext2_virtio_transfer(start_sector + i, (uint8_t *)buffer + (i * 512), true) != 0) {
          error("Write failed at sector ");
          print_dec(start_sector + i);
          print_character("\n");
@@ -37,7 +41,7 @@ void ext2_write_block(uint32_t block, void *buffer) {
 
 void init_ext2() {
    static uint8_t buffer[1024];
-   if (virtio_read_sector(2, buffer) != 0 || virtio_read_sector(3, buffer + 512) != 0) {
+   if (ext2_virtio_transfer(2, buffer, false) != 0 || ext2_virtio_transfer(3, buffer + 512, false) != 0) {
       errorn("Failed to read ext2 superblock");
       return;
    }// if to check the read of ext2
@@ -387,7 +391,8 @@ int ext2_write(const char *path, const void *buffer, uint32_t count, uint32_t of
    }
    uint32_t ino = ext2_resolve_path(path);
    if (ino == 0) {
-      return -1;
+      ext2_create_file(path);
+      ino = ext2_resolve_path(path);
    }
    struct ext2_inode inode;
    if (ext2_read_inode(ino, &inode) != 0) {
@@ -447,7 +452,7 @@ static void ext2_free_block(uint32_t blk) {
 static void ext2_free_inode_record(uint32_t inode_no) {
    if (inode_no == 0) {
       return;
-   }
+   }// if
    uint32_t bgd_block = (ext2_block_size == 1024) ? 2 : 1;
    static uint8_t bgd_buf[4096];
    ext2_read_block(bgd_block, bgd_buf);
@@ -465,15 +470,15 @@ int ext2_remove(const char *path) {
    if (path == NULL || *path == '\0') {
       return -1;
    }
-   int last_slash = -1;
-   for (int i = 0; path[i] != '\0'; i++) {
+   uint32_t last_slash = -1;
+   for (uint32_t i = 0; path[i] != '\0'; i++) {
       if (path[i] == '/') {
          last_slash = i;
       }
    }
    char parent_path[256];
    const char *filename;
-   if (last_slash == -1) {
+   if (last_slash == (uint32_t) -1) {
       parent_path[0] = '/';
       parent_path[1] = '\0';
       filename = path;
@@ -482,7 +487,7 @@ int ext2_remove(const char *path) {
       parent_path[1] = '\0';
       filename = path + 1;
    } else {
-      for (int i = 0; i < last_slash; i++) {
+      for (uint32_t i = 0; i < last_slash; i++) {
          parent_path[i] = path[i];
       }
       parent_path[last_slash] = '\0';
@@ -558,16 +563,246 @@ int ext2_remove(const char *path) {
    return 0;
 }
 
-void create_ext2_process() {
+void ext2_driver_process(void) {
+   init_ext2();
+   struct fs_ipc_req req;
+   uint32_t status;
+   while (1) {
+      uint32_t sender = user_ipc_recv(0, &req);
+      if (req.cmd == 2) {
+         status = ext2_mkdir(req.path);
+      }// if
+      if (sender != (uint32_t)-1) {
+        user_ipc_send(sender, (void *)(uintptr_t)status);
+      }// if
+   }// while
+}// ext2_driver_process
+
+int ext2_virtio_transfer(uint32_t sector, void *buffer, bool is_write) {
+   uint32_t virtio_pid = user_get_pid_by_gid(VIRTIO_GID);
+   if (virtio_pid == (uint32_t)-1) {
+      return -1;
+   }// if
+   struct virtio_ipc_req req;
+   req.cmd = is_write ? 1 : 0;
+   req.sector = sector;
+   req.buffer = buffer;
+   uint32_t status = 0;
+   user_ipc_call(virtio_pid, &req, &status);
+   return (int)status;
+}// ext2_virtio_transfer
+
+void create_ext2_process(void) {
    infon("Starting ext2 process");
-   uint32_t pid = create_process((void *)init_ext2, FS_GID);
+   uint32_t pid = create_process((void *)ext2_driver_process, FS_GID);
    struct process *ext2_process = get_process_by_pid(pid);
    if (ext2_process) {
       uint32_t gid = ext2_process->gid;
-      uint32_t sid = generate_sid(gid, (uintptr_t)init_ext2);
+      uint32_t sid = generate_sid(gid, (uintptr_t)ext2_driver_process);
       ext2_process->sid = sid;
    }// if
-   pkcall_map_device(SCREEN_ADDRESS, SCREEN_ADDRESS);
-   pkcall_map_device(UART_STATUS, UART_STATUS);
-   successn("keyboard process started");
-}// create_screen_process
+   successn("ext2 process started");
+}// create_ext2_process
+
+static uint32_t ext2_alloc_inode(void) {
+   uint32_t bgd_block = (ext2_block_size == 1024) ? 2 : 1;
+   static uint8_t bgd_buf[4096];
+   ext2_read_block(bgd_block, bgd_buf);
+   struct ext2_group_desc *bgd = (struct ext2_group_desc *)bgd_buf;
+   if (bgd[0].bg_free_inodes_count == 0) {
+      return 0;
+   }// if
+   static uint8_t bmap[4096];
+   ext2_read_block(bgd[0].bg_inode_bitmap, bmap);
+   for (uint32_t byte = 0; byte < ext2_block_size; byte++) {
+      if (bmap[byte] != 0xFF) {
+         for (uint8_t bit = 0; bit < 8; bit++) {
+            if ((bmap[byte] & (1 << bit)) == 0) {
+               bmap[byte] |= (1 << bit);
+               ext2_write_block(bgd[0].bg_inode_bitmap, bmap);
+               bgd[0].bg_free_inodes_count--;
+               ext2_write_block(bgd_block, bgd_buf);
+               uint32_t new_inode = byte * 8 + bit + 1;
+               return new_inode;
+            }// if
+         }// for
+      }//if
+   }// for
+   return 0;
+}// ext2_alloc_inode
+
+uint32_t ext2_mkdir(const char *path) {
+   if (path == NULL || *path == '\0') {
+      return -1;
+   }// if  
+   uint32_t last_slash = -1;
+   for (uint32_t i = 0; path[i] != '\0'; i++) {
+      if (path[i] == '/') {
+         last_slash = i;
+      }// if
+   }// for
+   char parent_path[256];
+   const char *filename;
+   if (last_slash == (uint32_t) -1) {
+      parent_path[0] = '/';
+      parent_path[1] = '\0';
+      filename = path;
+   } else if (last_slash == 0) {
+      parent_path[0] = '/';
+      parent_path[1] = '\0';
+      filename = path + 1;
+   } else {
+      for (uint32_t i = 0; i < last_slash; i++) {
+         parent_path[i] = path[i];
+      }// for
+      parent_path[last_slash] = '\0';
+      filename = path + last_slash + 1;
+   }// if
+   uint32_t name_len = 0;
+   while (filename[name_len] != '\0') {
+      name_len++;
+   }// while
+   if (name_len == 0) {
+      return -1;
+   }// if
+   uint32_t parent_ino = ext2_resolve_path(parent_path);
+   if (parent_ino == 0) {
+      return -1;
+   }// if
+   struct ext2_inode parent_inode;
+   if (ext2_read_inode(parent_ino, &parent_inode) != 0) {
+      return -1;
+   }// if
+   if (ext2_lookup(parent_ino, filename) != 0) {
+      return 0; // already exists
+   }// if
+   uint32_t new_ino = ext2_alloc_inode();
+   uint32_t new_blk = ext2_alloc_block();
+   if (new_ino == 0 || new_blk == 0) {
+      return -1;
+   }// if
+   struct ext2_inode new_inode;
+   memset(&new_inode, 0, sizeof(struct ext2_inode));
+   new_inode.inode_mode = 0x41ED;
+   new_inode.inode_size = ext2_block_size;
+   new_inode.inode_links_count = 2;
+   new_inode.inode_blocks = ext2_block_size / 512;
+   new_inode.inode_block[0] = new_blk;
+   ext2_write_inode(new_ino, &new_inode);
+   static uint8_t dir_buf[4096];
+   memset(dir_buf, 0, ext2_block_size);
+   struct ext2_dir_entry *dot = (struct ext2_dir_entry *)dir_buf;
+   dot->inode = new_ino;
+   dot->rec_len = 12;
+   dot->name_len = 1;
+   dot->file_type = 2;
+   dot->name[0] = '.';   
+   struct ext2_dir_entry *dotdot = (struct ext2_dir_entry *)(dir_buf + 12);
+   dotdot->inode = parent_ino;
+   dotdot->rec_len = ext2_block_size - 12;
+   dotdot->name_len = 2;
+   dotdot->file_type = 2;
+   dotdot->name[0] = '.';
+   dotdot->name[1] = '.';
+   ext2_write_block(new_blk, dir_buf);    
+   static uint8_t parent_buf[4096];
+   ext2_read_block(parent_inode.inode_block[0], parent_buf);
+   uint32_t offset = 0;
+   struct ext2_dir_entry *entry = (struct ext2_dir_entry *)parent_buf;
+   while (offset + entry->rec_len < ext2_block_size) {
+      offset += entry->rec_len;
+      entry = (struct ext2_dir_entry *)(parent_buf + offset);
+   }// while
+   uint32_t actual_last_len = ((8 + entry->name_len + 3) / 4) * 4;
+   uint32_t new_entry_len = entry->rec_len - actual_last_len;
+   entry->rec_len = actual_last_len;
+   struct ext2_dir_entry *new_entry = (struct ext2_dir_entry *)((uint8_t *)entry + actual_last_len);
+   new_entry->inode = new_ino;
+   new_entry->rec_len = new_entry_len;
+   new_entry->name_len = (uint8_t)name_len;
+   new_entry->file_type = 2;
+   memcpy(new_entry->name, filename, name_len);
+   ext2_write_block(parent_inode.inode_block[0], parent_buf);
+   parent_inode.inode_links_count++;
+   ext2_write_inode(parent_ino, &parent_inode);
+   return 0;
+}// ext2_mkdir
+
+uint32_t ext2_create_file(const char *path) {
+   if (path == NULL || *path == '\0') {
+      return -1;
+   }// if  
+   uint32_t last_slash = -1;
+   for (uint32_t i = 0; path[i] != '\0'; i++) {
+      if (path[i] == '/') {
+         last_slash = i;
+      }// if
+   }// for
+   char parent_path[256];
+   const char *filename;
+   if (last_slash == (uint32_t) -1) {
+      parent_path[0] = '/';
+      parent_path[1] = '\0';
+      filename = path;
+   } else if (last_slash == 0) {
+      parent_path[0] = '/';
+      parent_path[1] = '\0';
+      filename = path + 1;
+   } else {
+      for (uint32_t i = 0; i < last_slash; i++) {
+         parent_path[i] = path[i];
+      }// for
+      parent_path[last_slash] = '\0';
+      filename = path + last_slash + 1;
+   }// if
+   uint32_t name_len = 0;
+   while (filename[name_len] != '\0') {
+      name_len++;
+   }// while
+   if (name_len == 0) {
+      return -1;
+   }// if
+   uint32_t parent_ino = ext2_resolve_path(parent_path);
+   if (parent_ino == 0) {
+      return -1;
+   }// if
+   struct ext2_inode parent_inode;
+   if (ext2_read_inode(parent_ino, &parent_inode) != 0) {
+      return -1;
+   }// if
+   if (ext2_lookup(parent_ino, filename) != 0) {
+      return 0; // already exists
+   }// if
+   uint32_t new_ino = ext2_alloc_inode();
+   if (new_ino == 0) {
+      return -1;
+   }// if
+   struct ext2_inode new_inode;
+   memset(&new_inode, 0, sizeof(struct ext2_inode));
+   new_inode.inode_mode = 0644;
+   new_inode.inode_size = 0;
+   new_inode.inode_links_count = 1;
+   new_inode.inode_blocks = 0;
+   new_inode.inode_block[0] = 0;
+   ext2_write_inode(new_ino, &new_inode);  
+   static uint8_t parent_buf[4096];
+   ext2_read_block(parent_inode.inode_block[0], parent_buf);
+   uint32_t offset = 0;
+   struct ext2_dir_entry *entry = (struct ext2_dir_entry *)parent_buf;
+   while (offset + entry->rec_len < ext2_block_size) {
+      offset += entry->rec_len;
+      entry = (struct ext2_dir_entry *)(parent_buf + offset);
+   }// while
+   uint32_t actual_last_len = ((8 + entry->name_len + 3) / 4) * 4;
+   uint32_t new_entry_len = entry->rec_len - actual_last_len;
+   entry->rec_len = actual_last_len;
+   struct ext2_dir_entry *new_entry = (struct ext2_dir_entry *)((uint8_t *)entry + actual_last_len);
+   new_entry->inode = new_ino;
+   new_entry->rec_len = new_entry_len;
+   new_entry->name_len = (uint8_t)name_len;
+   new_entry->file_type = 1;
+   memcpy(new_entry->name, filename, name_len);
+   ext2_write_block(parent_inode.inode_block[0], parent_buf);
+   ext2_write_inode(parent_ino, &parent_inode);
+   return 0;
+}// ext2_mkdir
