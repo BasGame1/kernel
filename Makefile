@@ -1,4 +1,3 @@
-# 1. Determine requested architecture (REQ_ARCH) from targets or command-line variables
 ifneq ($(filter x86,$(MAKECMDGOALS)),)
   REQ_ARCH := x86
 else ifneq ($(filter x86_64,$(MAKECMDGOALS)),)
@@ -15,11 +14,9 @@ else ifneq ($(strip $(ARCH)),)
   REQ_ARCH := $(strip $(ARCH))
 endif
 
-# 2. Overwrite or validate CONFIG against requested architecture
 CONFIG_EXPLICIT := $(findstring command line,$(origin CONFIG))
 
 ifeq ($(CONFIG_EXPLICIT),)
-  # CONFIG was not explicitly passed on the command line; overwrite it based on REQ_ARCH
   ifeq ($(REQ_ARCH),x86)
     CONFIG := default-x86
   else ifeq ($(REQ_ARCH),x86_64)
@@ -42,13 +39,11 @@ ifeq ($(wildcard $(CONFIG_FILE)),)
   $(error Config file '$(CONFIG_FILE)' does not exist!)
 endif
 
-# 3. Read architecture flags from CONFIG_FILE
 CFG_RISCV := $(shell grep '^[[:space:]]*RISCV=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 CFG_ARM   := $(shell grep '^[[:space:]]*ARM=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 CFG_X86   := $(shell grep '^[[:space:]]*X86=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 CFG_32BIT := $(shell grep '^[[:space:]]*32BIT=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 
-# 4. If an architecture was requested and CONFIG was explicitly specified, verify compatibility or error out!
 ifneq ($(REQ_ARCH),)
   ifneq ($(CONFIG_EXPLICIT),)
     ifeq ($(REQ_ARCH),x86)
@@ -78,7 +73,6 @@ ifneq ($(REQ_ARCH),)
     endif
   endif
 else
-  # If no REQ_ARCH was explicitly given, derive TARGET_ARCH from config file
   ifeq ($(strip $(CFG_X86)),1)
     ifeq ($(strip $(CFG_32BIT)),1)
       REQ_ARCH := x86
@@ -111,7 +105,6 @@ ANTARTICA_DIR =
 CFLAGS_ANTARTICA =
 endif
 
-# Toolchain and flags mapping by architecture
 ifeq ($(REQ_ARCH),x86)
   DEF_CC = gcc -m32
   DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m32 -fno-stack-protector -D__X86__ -D__32BIT__ $(CFLAGS_ANTARTICA)
@@ -171,8 +164,8 @@ OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
 TARGET_TESTS = $(OUT_TESTS)/run_tests
-DIRS = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers $(ANTARTICA_DIR)
-DIRS_ALL = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers antartica
+DIRS = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers $(ANTARTICA_DIR) modules
+DIRS_ALL = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers antartica modules
 OBJECTS = $(foreach dir,$(DIRS),$(OUT)/$(dir).o)
 KERNEL_OBJECT = $(OUT)/kernel.o
 TEST_FILES = $(wildcard tests/*.c)
@@ -183,7 +176,6 @@ PATCH_GEN = $(OUT)/create_patch
 KERNEL_OLD ?= $(OUT)/kernel.old
 UPDATE_BIN = $(OUT)/update.bin
 
-# Neo config
 NEO_DIR = $(CURDIR)/neo
 NEO_SRC = $(NEO_DIR)/src
 CONFIG_H = $(CURDIR)/include/gen/config.h
