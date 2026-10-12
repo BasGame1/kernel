@@ -1,15 +1,106 @@
-CONFIG ?= default-riscv
+# 1. Determine requested architecture (REQ_ARCH) from targets or command-line variables
+ifneq ($(filter x86,$(MAKECMDGOALS)),)
+  REQ_ARCH := x86
+else ifneq ($(filter x86_64,$(MAKECMDGOALS)),)
+  REQ_ARCH := x86_64
+else ifneq ($(filter arm,$(MAKECMDGOALS)),)
+  REQ_ARCH := arm
+else ifneq ($(filter arm64,$(MAKECMDGOALS)),)
+  REQ_ARCH := arm64
+else ifneq ($(filter riscv,$(MAKECMDGOALS)),)
+  REQ_ARCH := riscv
+else ifneq ($(filter riscv64,$(MAKECMDGOALS)),)
+  REQ_ARCH := riscv64
+else ifneq ($(strip $(ARCH)),)
+  REQ_ARCH := $(strip $(ARCH))
+endif
+
+# 2. Overwrite or validate CONFIG against requested architecture
+CONFIG_EXPLICIT := $(findstring command line,$(origin CONFIG))
+
+ifeq ($(CONFIG_EXPLICIT),)
+  # CONFIG was not explicitly passed on the command line; overwrite it based on REQ_ARCH
+  ifeq ($(REQ_ARCH),x86)
+    CONFIG := default-x86
+  else ifeq ($(REQ_ARCH),x86_64)
+    CONFIG := default-x86_64
+  else ifeq ($(REQ_ARCH),arm)
+    CONFIG := default-arm
+  else ifeq ($(REQ_ARCH),arm64)
+    CONFIG := default-arm64
+  else ifeq ($(REQ_ARCH),riscv)
+    CONFIG := default-riscv
+  else ifeq ($(REQ_ARCH),riscv64)
+    CONFIG := default-riscv64
+  else
+    CONFIG ?= default-riscv
+  endif
+endif
+
 CONFIG_FILE = $(CURDIR)/config/$(CONFIG)
+ifeq ($(wildcard $(CONFIG_FILE)),)
+  $(error Config file '$(CONFIG_FILE)' does not exist!)
+endif
+
+# 3. Read architecture flags from CONFIG_FILE
+CFG_RISCV := $(shell grep '^[[:space:]]*RISCV=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+CFG_ARM   := $(shell grep '^[[:space:]]*ARM=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+CFG_X86   := $(shell grep '^[[:space:]]*X86=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+CFG_32BIT := $(shell grep '^[[:space:]]*32BIT=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
+
+# 4. If an architecture was requested and CONFIG was explicitly specified, verify compatibility or error out!
+ifneq ($(REQ_ARCH),)
+  ifneq ($(CONFIG_EXPLICIT),)
+    ifeq ($(REQ_ARCH),x86)
+      ifneq ($(strip $(CFG_X86)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but x86 was requested!)
+      endif
+    else ifeq ($(REQ_ARCH),x86_64)
+      ifneq ($(strip $(CFG_X86)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but x86_64 was requested!)
+      endif
+    else ifeq ($(REQ_ARCH),riscv)
+      ifneq ($(strip $(CFG_RISCV)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but riscv was requested!)
+      endif
+    else ifeq ($(REQ_ARCH),riscv64)
+      ifneq ($(strip $(CFG_RISCV)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but riscv64 was requested!)
+      endif
+    else ifeq ($(REQ_ARCH),arm)
+      ifneq ($(strip $(CFG_ARM)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but arm was requested!)
+      endif
+    else ifeq ($(REQ_ARCH),arm64)
+      ifneq ($(strip $(CFG_ARM)),1)
+        $(error Architecture mismatch: CONFIG='$(CONFIG)' is configured for a different architecture (RISCV=$(CFG_RISCV), ARM=$(CFG_ARM), X86=$(CFG_X86)), but arm64 was requested!)
+      endif
+    endif
+  endif
+else
+  # If no REQ_ARCH was explicitly given, derive TARGET_ARCH from config file
+  ifeq ($(strip $(CFG_X86)),1)
+    ifeq ($(strip $(CFG_32BIT)),1)
+      REQ_ARCH := x86
+    else
+      REQ_ARCH := x86_64
+    endif
+  else ifeq ($(strip $(CFG_ARM)),1)
+    ifeq ($(strip $(CFG_32BIT)),1)
+      REQ_ARCH := arm
+    else
+      REQ_ARCH := arm64
+    endif
+  else
+    ifeq ($(strip $(CFG_32BIT)),0)
+      REQ_ARCH := riscv64
+    else
+      REQ_ARCH := riscv
+    endif
+  endif
+endif
 
 CONFIG_CC := $(shell grep '^[[:space:]]*CC=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
-ifeq ($(origin CC),default)
-ifneq ($(strip $(CONFIG_CC)),)
-CC = $(strip $(CONFIG_CC))
-else
-CC = riscv64-unknown-elf-gcc
-endif
-endif
-
 
 CONFIG_USE_ANTARTICA := $(shell grep '^[[:space:]]*USE_ANTARTICA=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 ifeq ($(strip $(CONFIG_USE_ANTARTICA)),1)
@@ -20,7 +111,62 @@ ANTARTICA_DIR =
 CFLAGS_ANTARTICA =
 endif
 
-CFLAGS ?= -fcommon -Wall -Wextra -ffreestanding -nostdlib -mcmodel=medany -march=rv32imac_zicsr_zifencei -mabi=ilp32 -D__QEMU__ $(CFLAGS_ANTARTICA)
+# Toolchain and flags mapping by architecture
+ifeq ($(REQ_ARCH),x86)
+  DEF_CC = gcc -m32
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m32 -fno-stack-protector -D__X86__ -D__32BIT__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = i686-unknown-linux-gnu
+  LD_ARCH = i386
+  LD_ENTRY = _start_x86
+  LD_BASE = 0x00100000
+else ifeq ($(REQ_ARCH),x86_64)
+  DEF_CC = gcc
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m64 -fno-stack-protector -D__X86__ -D__64BIT__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = x86_64-unknown-none
+  LD_ARCH = i386:x86-64
+  LD_ENTRY = _start_x86
+  LD_BASE = 0x00100000
+else ifeq ($(REQ_ARCH),arm)
+  DEF_CC = arm-none-eabi-gcc
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -D__ARM__ -D__32BIT__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = armv7a-none-eabi
+  LD_ARCH = arm
+  LD_ENTRY = _start_arm
+  LD_BASE = 0x40000000
+else ifeq ($(REQ_ARCH),arm64)
+  DEF_CC = aarch64-linux-gnu-gcc
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -D__ARM__ -D__64BIT__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = aarch64-unknown-none-softfloat
+  LD_ARCH = aarch64
+  LD_ENTRY = _start_arm
+  LD_BASE = 0x40000000
+else ifeq ($(REQ_ARCH),riscv64)
+  DEF_CC = riscv64-unknown-elf-gcc
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -mcmodel=medany -march=rv64gc -mabi=lp64d -D__RISCV__ -D__64BIT__ -D__QEMU__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = riscv64gc-unknown-none-elf
+  LD_ARCH = riscv
+  LD_ENTRY = _start64
+  LD_BASE = 0x80000000
+else
+  # Default: riscv 32
+  DEF_CC = riscv64-unknown-elf-gcc
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -mcmodel=medany -march=rv32imac_zicsr_zifencei -mabi=ilp32 -D__RISCV__ -D__32BIT__ -D__QEMU__ $(CFLAGS_ANTARTICA)
+  DEF_RUST_TARGET = riscv32imc-unknown-none-elf
+  LD_ARCH = riscv
+  LD_ENTRY = _start
+  LD_BASE = 0x80000000
+endif
+
+ifneq ($(strip $(CONFIG_CC)),)
+  CC = $(strip $(CONFIG_CC))
+else ifeq ($(origin CC),default)
+  CC = $(DEF_CC)
+else
+  CC ?= $(DEF_CC)
+endif
+CFLAGS ?= $(DEF_CFLAGS)
+RUST_TARGET ?= $(DEF_RUST_TARGET)
+
 OUT = $(CURDIR)/out
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
@@ -43,47 +189,19 @@ NEO_SRC = $(NEO_DIR)/src
 CONFIG_H = $(CURDIR)/include/gen/config.h
 BUNDLE_IMG = $(OUT)/build_bundle.img
 
-# map rust targets
-ifeq ($(CONFIG),default-riscv)
-RUST_TARGET ?= riscv32imc-unknown-none-elf
-else ifeq ($(CONFIG),default-riscv64)
-RUST_TARGET ?= riscv64gc-unknown-none-elf
-else ifeq ($(CONFIG),default-arm)
-RUST_TARGET ?= armv7a-none-eabi
-else ifeq ($(CONFIG),default-arm64)
-RUST_TARGET ?= aarch64-unknown-none-softfloat
-else ifeq ($(CONFIG),default-x86)
-RUST_TARGET ?= i686-unknown-none
-else ifeq ($(CONFIG),default-x86_64)
-RUST_TARGET ?= x86_64-unknown-none
-else
-RUST_TARGET ?= riscv32imc-unknown-none-elf
-endif
-
 LIBNEO = $(NEO_DIR)/target/$(RUST_TARGET)/release/libneo.a
 ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT) $(LIBNEO)
 
-all: $(OUT) dirs $(KERNEL_OBJECT) $(LIBNEO) $(TARGET)
+all: $(OUT) $(CONFIG_H) dirs $(KERNEL_OBJECT) $(LIBNEO) $(TARGET)
 
 qemu: CFLAGS += -D__QEMU__
 qemu: all
 
-arm: CONFIG = default-arm
 arm: all
-
-arm64: CONFIG = default-arm64
 arm64: all
-
-riscv: CONFIG = default-riscv
 riscv: all
-
-riscv64: CONFIG = default-riscv64
 riscv64: all
-
-x86: CONFIG = default-x86
 x86: all
-
-x86_64: CONFIG = default-x86_64
 x86_64: all
 
 run: all
@@ -132,17 +250,23 @@ noshell_dirs: $(OUT)
 dirs_with_tests: $(OUT)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
 
-$(KERNEL_OBJECT): kernel.c | $(OUT)
+$(KERNEL_OBJECT): kernel.c $(CONFIG_H) | $(OUT)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OUT_TESTS)/%.o: tests/%.c | $(OUT_TESTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(GEN_LINKER): $(LINKER) | $(OUT)
+$(CONFIG_H): $(CONFIG_FILE) scripts/create_config.sh
+	./scripts/create_config.sh $(CONFIG)
+
+$(GEN_LINKER): $(LINKER) $(CONFIG_H) | $(OUT)
 	sed -e 's/OUTPUT_ARCH[[:space:]]*=[[:space:]]*/OUTPUT_ARCH/g' \
 	    -e 's/ENTRY[[:space:]]*=[[:space:]]*/ENTRY/g' \
 	    -e 's/SECTIONS[[:space:]]*=[[:space:]]*/SECTIONS/g' \
-	    -e 's/\(\.[a-zA-Z0-9_.]\+\)[[:space:]]*=[[:space:]]*{/\1 : {/g' $< > $@
+	    -e 's/\(\.[a-zA-Z0-9_.]\+\)[[:space:]]*=[[:space:]]*{/\1 : {/g' \
+	    -e 's/"riscv"/"$(LD_ARCH)"/g' \
+	    -e 's/_start/$(LD_ENTRY)/g' \
+	    -e 's/0x80000000/$(LD_BASE)/g' $< > $@
 
 neo_prebuild:
 	@mkdir -p $(NEO_SRC)
@@ -170,8 +294,8 @@ $(LIBNEO): neo_prebuild
 
 $(TARGET) $(DEBUG_TARGET) $(NOSHELL_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
 	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(ALL_OBJECTS)
-	@if command -v $(subst gcc,objcopy,$(CC)) >/dev/null 2>&1; then \
-		$(subst gcc,objcopy,$(CC)) -O binary $@ $@.bin; \
+	@if command -v $(subst gcc,objcopy,$(firstword $(CC))) >/dev/null 2>&1; then \
+		$(subst gcc,objcopy,$(firstword $(CC))) -O binary $@ $@.bin; \
 	elif command -v objcopy >/dev/null 2>&1; then \
 		objcopy -O binary $@ $@.bin; \
 	else \

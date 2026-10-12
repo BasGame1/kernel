@@ -32,9 +32,10 @@ USE_LOAD_MODULES=0 // lets load modules on the kernel
 # antartica
 USE_ANTARTICA=0 // adds total linux compatibility, for replacing linux kernel in GNU/linux
 USE_LINUX_ABI=0 // adds linux scripts compatibility for scripts
+USE_LINUX_MODULES=0 // adds linux kernel modules compatibility
 
 # windows vm
-USE_WINDOWS_SUPPORT=0 // adds windows kernel apps support, still not implemented
+USE_WINDOWS_SUPPORT=0 // adds windows kernel apps support, depends on USE_LINUX_MODULES still not implemented
 
 # ntar
 USE_NTAR=0 // No Trace After Reboot, aka live build
@@ -73,6 +74,9 @@ USE_EXFAT=0 // Extended FAT (exFAT) filesystem driver
 USE_OVERLAYFS=0 // OverlayFS union filesystem driver
 USE_EROFS=0 // Enhanced Read-Only File System (EROFS) driver
 USE_NVME=0 // NVMe PCIe storage controller driver
+
+# virt
+USE_KVM=0 // Integrate KVM as a builtin kernel module, depends on USE_LINUX_MODULES
 
 # drivers
 USE_ETHERNET_E1000=0 // Intel 82540EM Gigabit Ethernet driver
