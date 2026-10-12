@@ -15,7 +15,6 @@ static uint16_t last_used_idx = 0;
 static struct virtio_blk_req disk_req;
 static volatile uint8_t disk_status;
 
-/* Wrappers just for commodity */
 int virtio_read_sector(uint64_t sector, void *buffer) {
    if (ntar_is_active()) {
       if (ntar_ram_read_sector(sector, buffer) == 0) {
@@ -23,13 +22,13 @@ int virtio_read_sector(uint64_t sector, void *buffer) {
       }// if
    }// if
    return virtio_blk_transfer(sector, buffer, false);
-}
+}// virtio_read_sector
 int virtio_write_sector(uint64_t sector, void *buffer) {
    if (ntar_is_active()) {
       return ntar_ram_write_sector(sector, buffer);
    }// if
    return virtio_blk_transfer(sector, buffer, true);
-}
+}// virtio_write_sector
 
 uint32_t probe_mmio() {
   printu("Probbing hardware addresses for block device");
@@ -62,7 +61,7 @@ uint32_t probe_mmio() {
         print_hex(i);
         printn(" is modern");
         is_modern = 1;
-     }// using 2 vars instead of 1 to not confunse myself in the future
+     }// if
      if (*deviceid == 1) {
         info("Address: ");
         print((char *)i);
@@ -74,8 +73,8 @@ uint32_t probe_mmio() {
         printn("Is block device");
         is_block = 1;
         break;
-     }// same about 2 vars
-  }// while
+     }// if
+  }// for
   if (!is_block) {
      return 0;
   } else {
@@ -104,11 +103,17 @@ int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write) {
    queue_desc[2].len = 1;
    queue_desc[2].flags = VRING_DESC_F_WRITE;
    queue_desc[2].next = 0;   
+#if defined(__RISCV__) || defined(__riscv)
+#define virtio_wmb() asm volatile("fence w,w" ::: "memory")
+#else
+#define virtio_wmb() asm volatile("" ::: "memory")
+#endif
+
    uint16_t avail_idx = queue_avail.idx % VIRTQ_NUM;
    queue_avail.ring[avail_idx] = 0;   
-   asm volatile("fence w,w" ::: "memory");
+   virtio_wmb();
    queue_avail.idx++;
-   asm volatile("fence w,w" ::: "memory");   
+   virtio_wmb();   
    *(volatile uint32_t *)(uintptr_t)(virtio_base + VIRTIO_QUEUE_NOTIFY) = 0;    
    while (queue_used.idx == last_used_idx) {
       asm volatile("nop");
@@ -159,13 +164,12 @@ void init_fs() {
    *status = 1 | 2 | 8 | 4;
    successn("Virtio block device was successfull");
    #ifdef __DEBUG__
-   // Test if sector is read
    static uint8_t sector_buffer[512];
    if (virtio_read_sector(0, sector_buffer) == 0) {
       successn("Sector 0 read successful");
    } else {
       errorn("Sector 0 read failed");
-   }
+   }// if
    #endif
 }// init_fs
 
