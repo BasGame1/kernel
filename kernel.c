@@ -148,8 +148,8 @@ extern void kernel_init() {
 extern struct trap_frame *trap_handler(struct trap_frame *frame) {
    uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
-   bool is_hardware = (cause & 0x80000000) != 0;
-   uint32_t trap_reason = cause & 0x7FFFFFFF;
+   bool is_hardware = ((intptr_t)cause < 0);
+   uint32_t trap_reason = (uint32_t)(cause & 0xFFF);
 
    if (trap_reason > 15) {
       fataln("trap reason is bigger than 15");
