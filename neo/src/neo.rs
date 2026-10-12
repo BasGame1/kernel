@@ -47,7 +47,7 @@ static mut PRNG_STATE: u64 = 0x5EED_FEED_BAAD_F00D;
 
 #[inline(always)]
 fn get_cpu_timer_cycles() -> u64 {
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     unsafe {
         let low: u32;
         let high: u32;
@@ -60,6 +60,13 @@ fn get_cpu_timer_cycles() -> u64 {
         let val: u64;
         asm!("mrs {0}, cntvct_el0", out(reg) val, options(nomem, nostack));
         val
+    }// unsafe
+
+    #[cfg(target_arch = "arm")]
+    unsafe {
+        let val: u32;
+        asm!("mrc p15, 0, {0}, c9, c13, 0", out(reg) val, options(nomem, nostack));
+        val as u64
     }// unsafe
 
     #[cfg(target_arch = "riscv64")]
@@ -84,6 +91,11 @@ fn get_cpu_timer_cycles() -> u64 {
         }// loop
         ((high as u64) << 32) | (low as u64)
     }// unsafe
+
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "arm", target_arch = "aarch64", target_arch = "riscv32", target_arch = "riscv64")))]
+    {
+        0u64
+    }
 }// get_cpu_timer_cycle
 
 #[inline(always)]
@@ -106,6 +118,33 @@ fn get_hardware_info(out: &mut u64) -> bool {
         false
     }// unsafe
 
+    #[cfg(target_arch = "x86")]
+    unsafe {
+        let low: u32;
+        let high: u32;
+        let success1: u8;
+        let success2: u8;
+        asm!(
+            "rdrand {0}",
+            "setc {1}",
+            out(reg) low,
+            out(reg_byte) success1,
+            options(nomem, nostack)
+        );
+        asm!(
+            "rdrand {0}",
+            "setc {1}",
+            out(reg) high,
+            out(reg_byte) success2,
+            options(nomem, nostack)
+        );
+        if success1 == 1 && success2 == 1 {
+            *out = ((high as u64) << 32) | (low as u64);
+            return true;
+        }// if
+        false
+    }// unsafe
+
     #[cfg(target_arch = "aarch64")]
     unsafe {
         let val: u64;
@@ -117,7 +156,7 @@ fn get_hardware_info(out: &mut u64) -> bool {
         false
     } // unsafe
 
-    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
     {
         let _ = out;
         false
