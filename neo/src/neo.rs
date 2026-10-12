@@ -353,8 +353,13 @@ pub fn trap_handler(mail: &mut Mail) {
     let mut private_buffer = [0u8; MAX_PAYLOAD_SIZE];
     private_buffer[..len].copy_from_slice(&mail.payload[..len]);
     let safe_slice = &private_buffer[..len];
+
     match mail.request {
         1 => {
+           if SEED.is_empty() || CREATOR_KEY.is_empty() {
+               mail.status = STATUS_ERR_AUTH_FAILED;
+               return;
+            }// if fix by 0 division
             let mut hasher = Sha256::new();
             hasher.update(safe_slice);
             mail.hash = hasher.finalize();
@@ -422,27 +427,33 @@ pub fn trap_handler(mail: &mut Mail) {
             }// if
         } // validate creds
         6 => {
-            if len <= SSH_KEY_LEN {
-                unsafe {
-                    ACTIVE_SSH_KEY[..len].copy_from_slice(safe_slice);
-                    SSH_KEY_ACTIVE = true;
-                }// unsafe
-                mail.status = STATUS_SUCCESS;
-            } else {
-                mail.status = STATUS_ERR_PAYLOAD_OVERSIZED;
-            }// if
-        }// create ssh
+           if !is_caller_authorized(mail) {
+              mail.status = STATUS_ERR_AUTH_FAILED;
+           } else if len <= SSH_KEY_LEN && len > 0 {
+              unsafe {
+                 ACTIVE_SSH_KEY = [0u8; SSH_KEY_LEN];
+                 ACTIVE_SSH_KEY[..len].copy_from_slice(safe_slice);
+                 ACTIVE_SSH_KEY_LEN = len;
+                 SSH_KEY_ACTIVE = true;
+              }// unsafe
+              mail.status = STATUS_SUCCESS;
+           } else {
+              mail.status = STATUS_ERR_PAYLOAD_OVERSIZED;
+           }//if 
+        }// 6
         7 => {
-            unsafe {
-                if SSH_KEY_ACTIVE {
-                    mail.payload[..SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY);
-                    mail.payload_len = SSH_KEY_LEN as u32;
-                    mail.status = STATUS_SUCCESS;
-                } else {
-                    mail.status = STATUS_ERR_AUTH_FAILED;
-                }// if
-            }// unsafe
-        }// get ssh
+           if !is_caller_authorized(mail) {
+              mail.status = STATUS_ERR_AUTH_FAILED;
+           } else unsafe {
+              if SSH_KEY_ACTIVE {
+                 mail.payload[..ACTIVE_SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY[..ACTIVE_SSH_KEY_LEN]);
+                 mail.payload_len = ACTIVE_SSH_KEY_LEN as u32;
+                 mail.status = STATUS_SUCCESS;
+              } else {
+                 mail.status = STATUS_ERR_AUTH_FAILED;
+              }// if
+           }// unsafe
+        }// ssh
         _ => {
             mail.status = STATUS_ERR_INVALID_CMD;
         }// default case
