@@ -477,6 +477,9 @@ int ext2_remove(const char *path) {
       }
    }
    char parent_path[256];
+   if (last_slash != (uint32_t)-1 && last_slash >= sizeof(parent_path)) {
+      return -1;
+   }
    const char *filename;
    if (last_slash == (uint32_t) -1) {
       parent_path[0] = '/';
@@ -642,6 +645,9 @@ uint32_t ext2_mkdir(const char *path) {
       }// if
    }// for
    char parent_path[256];
+   if (last_slash != (uint32_t)-1 && last_slash >= sizeof(parent_path)) {
+      return -1;
+   }
    const char *filename;
    if (last_slash == (uint32_t) -1) {
       parent_path[0] = '/';
@@ -739,6 +745,9 @@ uint32_t ext2_create_file(const char *path) {
       }// if
    }// for
    char parent_path[256];
+   if (last_slash != (uint32_t)-1 && last_slash >= sizeof(parent_path)) {
+      return -1;
+   }
    const char *filename;
    if (last_slash == (uint32_t) -1) {
       parent_path[0] = '/';

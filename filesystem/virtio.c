@@ -150,11 +150,11 @@ void init_fs() {
    }// if to see for support for queue
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_NUM) = VIRTQ_NUM;
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DESC_LOW) = (uint32_t)(uintptr_t)&queue_desc[0];
-   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DESC_HIGH) = 0;
+   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DESC_HIGH) = (uint32_t)(((uint64_t)(uintptr_t)&queue_desc[0]) >> 32);
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DRIVER_LOW) = (uint32_t)(uintptr_t)&queue_avail;
-   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DRIVER_HIGH) = 0;
+   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DRIVER_HIGH) = (uint32_t)(((uint64_t)(uintptr_t)&queue_avail) >> 32);
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DEVICE_LOW) = (uint32_t)(uintptr_t)&queue_used;
-   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DEVICE_HIGH) = 0;
+   *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_DEVICE_HIGH) = (uint32_t)(((uint64_t)(uintptr_t)&queue_used) >> 32);
    *(volatile uint32_t *)(uintptr_t)(address + VIRTIO_QUEUE_READY) = 1;
    *status = 1 | 2 | 8 | 4;
    successn("Virtio block device was successfull");

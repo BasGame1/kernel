@@ -124,6 +124,10 @@ int ext4_read_extent_file(const struct ext4_inode *inode, uint32_t block_offset,
    }// if
 
    if (eh->eh_depth == 0) {
+      if (eh->eh_entries > 4) {
+         errorn("ext4: invalid extent entries count");
+         return -1;
+      }// if
       const struct ext4_extent *ext = (const struct ext4_extent *)(inode->i_block + 3);
       for (uint16_t i = 0; i < eh->eh_entries; i++) {
          if (block_offset >= ext[i].ee_block && block_offset < (ext[i].ee_block + ext[i].ee_len)) {
