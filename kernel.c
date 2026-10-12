@@ -1,3 +1,4 @@
+// kernel.c
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
@@ -10,26 +11,6 @@ extern void kernel_init() {
    /* screen init */
    start_screen();
    successn("Kernel Starting");
-   
-   #ifdef __USE_NEO__
-      /* Boot secure env */
-      uintptr_t heap = allocate_memory;
-      infon("Booting neo, waiting");
-      uint32_t status = boot_neo(heap, 4096);
-      if (status != 0); {
-         errorn("Neo did not boot correctly, pausing");
-         #ifdef __DEBUG__
-            #ifndef __NOSHELL__
-               debugn("Debug shell, exiting will enter in the loop");
-               init_shell();
-            #endif
-            debugn("Enter in forever loop");
-         #endif
-         while (1) {
-            // Pause forever so the error message can be read
-         }// while
-      }// if
-   #endif
    
    #ifdef __USE_AB__
       /* Update protection */
@@ -107,18 +88,37 @@ extern void kernel_init() {
    /* print init */
    create_print_process();
 
+   /* module subsystem init */
+   init_modules();
+
    /* screen init */
-   create_screen_process();
+   #ifdef __LOAD_SCREEN_AS_MODULE__
+      register_screen_module();
+   #else
+      create_screen_process();
+   #endif
    
    /* keyboard init */
-   create_keyboard_process();
+   #ifdef __LOAD_KEYBOARD_AS_MODULE__
+      register_keyboard_module();
+   #else
+      create_keyboard_process();
+   #endif
    
    /* virtio init */
-   create_virtio_process();
+   #ifdef __LOAD_VIRTIO_AS_MODULE__
+      register_virtio_module();
+   #else
+      create_virtio_process();
+   #endif
    
    /* fs init */
-   #ifdef __USE_EXT2__
-      create_ext2_process();
+   #ifdef __LOAD_DEFAULT_FS_AS_MODULE__
+      register_default_fs_module();
+   #else
+      #ifdef __USE_EXT2__
+         create_ext2_process();
+      #endif
    #endif
    
    #ifndef __USE_NTAR__
@@ -126,12 +126,17 @@ extern void kernel_init() {
       create_dirs();
       create_slot_dirs();
    #else
-     //TODO, add ntar
+      ntar_init();
    #endif
    
    #if defined(__USE_AB__) || defined(__USE_AB_NO_REBOOT__)
       /* updates init */
       create_update_process();
+   #endif
+
+   #ifdef __USE_ANTARTICA__
+      /* antartica init */
+      create_antartica_process();
    #endif
    
    /* userspace init */
