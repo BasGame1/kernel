@@ -13,10 +13,6 @@ QEMU=0 // use harcoded qemu values
 DEBUG=0 // use debug build
 NOSHELL=0 // deactive primitive, only affects if DEBUG=1
 
-# filesystem
-USE_EXT2=0 // add ext2 support
-USE_DEFAULT_EXT2=0 // use ext2 as default fs
-
 # embedded
 EMBEDDED=0 // strip everything but basic boot sequence, for integrated systems only
 
@@ -38,7 +34,7 @@ USE_ANTARTICA=0 // adds total linux compatibility, for replacing linux kernel in
 USE_LINUX_ABI=0 // adds linux scripts compatibility for scripts
 
 # windows vm
-USE_WINDOWS_SUPPORT=0 // adds windows kernel apps support
+USE_WINDOWS_SUPPORT=0 // adds windows kernel apps support, still not implemented
 
 # ntar
 USE_NTAR=0 // No Trace After Reboot, aka live build
@@ -59,3 +55,60 @@ RANDOM_SEED=0 // Use a premade seed for the kernel, if equal to 0 one will be as
 GENERATE_CERT=0 // Generates a cert on the kernel that validates the authenticity of the files
 VERIFY_UPDATE=0 // Before applying an update via AB or ABNR, verify the package has correct signature, depends on GENERATE_CERT
 
+# load as modules
+LOAD_SCREEN_AS_MODULE=0 // load screen driver as unencapsulated userspace module
+LOAD_DEFAULT_FS_AS_MODULE=0 // load default fs driver as unencapsulated userspace module
+LOAD_VIRTIO_AS_MODULE=0 // load virtio driver as unencapsulated userspace module
+LOAD_KEYBOARD_AS_MODULE=0 // load keyboard driver as unencapsulated userspace module
+
+# fs
+USE_EXT2=0 // Ext2 driver
+#DEFAULT_FS= // Use a default filesystem, still not implemented
+USE_EXT4=0 // Linux ext4 filesystem driver
+USE_NTFS=0 // Windows NTFS filesystem driver
+USE_VFAT=0 // VFAT / FAT32 filesystem driver
+USE_BTRFS=0 // Btrfs B-tree filesystem driver
+USE_ISO9660=0 // ISO9660 CD-ROM filesystem driver
+USE_EXFAT=0 // Extended FAT (exFAT) filesystem driver
+USE_OVERLAYFS=0 // OverlayFS union filesystem driver
+USE_EROFS=0 // Enhanced Read-Only File System (EROFS) driver
+USE_NVME=0 // NVMe PCIe storage controller driver
+
+# drivers
+USE_ETHERNET_E1000=0 // Intel 82540EM Gigabit Ethernet driver
+USE_ETHERNET_RTL8139=0 // Realtek RTL8139 Fast Ethernet driver
+USE_ETHERNET_VIRTIO=0 // VirtIO Network device driver
+USE_NET_ENA=0 // Amazon Web Services Elastic Network Adapter (ENA) driver
+USE_NET_GVE=0 // Google Cloud Virtual Ethernet (GVE) driver
+USE_NET_IXGBE=0 // Intel 10 Gigabit PCI Express (ixgbe) driver
+USE_NET_MLX5=0 // Mellanox ConnectX-4/5/6/7 (mlx5) core driver
+USE_NET_STMMAC=0 // Synopsys DesignWare Ethernet MAC (stmmac) driver
+USE_WIFI_RTL8188EU=0 // Realtek RTL8188EU USB WiFi driver
+USE_WIFI_ATH9K=0 // Qualcomm Atheros AR9003/AR9280 WiFi driver
+USE_WIFI_IPW2200=0 // Intel PRO/Wireless 2200BG / 2915ABG driver
+USE_CELLULAR_RMNET=0 // Qualcomm RmNet LTE/5G Cellular modem driver
+USE_CAN=0 // Controller Area Network (CAN / FlexCAN / CTU CAN FD) driver
+USE_FIREWIRE=0 // IEEE 1394 FireWire OHCI controller driver
+USE_NFC=0 // Near Field Communication (NFC PN533 / ISO14443) driver
+USE_BLUETOOTH_BTUSB=0 // Generic USB Bluetooth HCI driver (btusb)
+USE_BLUETOOTH_UART=0 // Generic UART Bluetooth HCI driver (btuart)
+USE_GPU_VIRTIO=0 // VirtIO-GPU 2D/3D graphics device driver
+USE_GPU_BOCHS=0 // Bochs / QEMU Standard VGA (VBE) graphics driver
+USE_FB_SIMPLE=0 // Simple linear framebuffer display driver
+USE_GPU_NOUVEAU=0 // NVIDIA graphics acceleration driver (Nouveau)
+USE_GPU_AMDGPU=0 // AMD Radeon / AMDGPU graphics driver
+USE_GPU_I915=0 // Intel HD / Iris / Xe graphics driver (i915)
+USE_KBD_I8042=0 // Standard PC / AT i8042 PS/2 keyboard controller
+USE_KBD_PL050=0 // ARM PrimeCell PL050 PS/2 keyboard controller
+USE_KBD_GOLDFISH=0 // Android Goldfish virtual event keyboard controller
+USE_AUDIO_INTEL_HDA=0 // Intel High Definition Audio (Azalia) driver
+USE_AUDIO_VIRTIO=0 // VirtIO Sound device driver
+USE_AUDIO_AC97=0 // AC'97 audio codec driver
+USE_SCREEN_GOLDFISH=0 // Android Goldfish emulator framebuffer screen driver
+USE_SCREEN_SSD1306=0 // SSD1306 monochrome OLED I2C display driver
+USE_USB_XHCI=0 // USB 3.0 Extensible Host Controller (xHCI) driver
+USE_USB_EHCI=0 // USB 2.0 Enhanced Host Controller (EHCI) driver
+USE_USB_HID=0 // USB Human Interface Device (keyboard/mouse) driver
+USE_GPU_MSM_ADRENO=0 // Qualcomm Adreno GPU driver
+USE_SERIAL_QCOM_GENI=0 // Qualcomm GENI serial engine UART driver
+USE_SOC_QCOM_SMD=0 // Qualcomm Shared Memory IPC driver (SMD/RPM)
