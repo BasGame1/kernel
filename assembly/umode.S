@@ -4,7 +4,7 @@
 _enteruserspace:
    #if defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
        #if defined(__ARM__)
-          #if not defined(__32BIT__)
+          #if !defined(__32BIT__)
               msr sp_el0, x0
 				  mov x1, #0
 				  mov x2, #0
@@ -59,7 +59,7 @@ _enteruserspace:
           #endif
       #endif
     #elif defined(__X86__)
-       #if not defined(__32BIT__)
+       #if !defined(__32BIT__)
 		     mov %rdi, %rsp
 		     xor %rax, %rax
 		     xor %rbx, %rbx
