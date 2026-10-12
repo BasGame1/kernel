@@ -169,12 +169,14 @@ struct trap_frame *schedule(struct trap_frame *current_frame) {
    if (next_idx != -1) {
       processes[next_idx].state = PROCESS_RUNNING;
       current_pid = (int)processes[next_idx].pid;
+#if defined(__RISCV__) || defined(__riscv)
       asm volatile("csrw mscratch, %0" :: "r"(processes[next_idx].kernel_stack));
+#endif
       return processes[next_idx].frame;
    }// if
 
-   if (current_proc) {
+   if (current_proc && current_proc->state != PROCESS_BLOCKED_RECV && current_proc->state != PROCESS_BLOCKED_SEND) {
       current_proc->state = PROCESS_RUNNING;
    }// if
    return current_frame;
-}// next_idx
+}// schedule

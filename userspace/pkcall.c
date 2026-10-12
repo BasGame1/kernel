@@ -90,7 +90,11 @@ uint32_t pkcall_map_device(uintptr_t phys_addr, uintptr_t virt_addr) {
    }// if
    extern uintptr_t *root_directory;
    map_virtual_memory(root_directory, virt_addr, phys_addr, (PTE_RWX | PTE_U));
+#if defined(__RISCV__) || defined(__riscv)
    asm volatile("sfence.vma zero, zero");
+#elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   asm volatile("" ::: "memory");
+#endif
    successn("mapped phyical with virtual via pkcall");
    return 0;
 }// pkcall_map_device

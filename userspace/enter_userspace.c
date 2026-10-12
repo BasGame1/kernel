@@ -12,24 +12,30 @@ void userspace_init() {
    if (!user_stack_page || !kernel_trap_stack_page) {
       fatal("Failed to allocate initial userspace stacks");
       return;
-   }
+   }// if
    uintptr_t user_stack = user_stack_page + 4096;
    uintptr_t kernel_trap_stack = kernel_trap_stack_page + 4096;
    extern uintptr_t *root_directory;
    if (root_directory) {
       map_virtual_memory(root_directory, user_stack_page, user_stack_page, (PTE_RWX | PTE_U));
-   }
+   }// if
+#if defined(__RISCV__) || defined(__riscv)
    asm volatile("csrw mscratch, %0" :: "r"(kernel_trap_stack));
+#endif
    infon("Starting and entering userspace");
    enter_userspace((uintptr_t)test_user_program, user_stack);
-}
+}// userspace_init
 void enter_userspace(uintptr_t entry, uintptr_t user_stack) {
+#if defined(__RISCV__) || defined(__riscv)
    uint32_t state;
    asm volatile("csrr %0, mstatus" : "=r"(state));
    state &= ~(3 << 11);
    state |= (1 << 7);
    asm volatile("csrw mstatus, %0" :: "r"(state));
    asm volatile("csrw mepc, %0" :: "r"(entry));
+#else
+   (void)entry;
+#endif
    #ifdef __DEBUG__
       uintptr_t entry1;
       uint32_t process1_id = create_process(entry1, 0);

@@ -107,7 +107,7 @@ uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf) {
    }// for
    curr->state = PROCESS_BLOCKED_RECV;
    curr->ipc_msg_buf = message_buf;
-   return 0;
+   return (uint32_t)-1;
 }// kcall_ipc_recv
 
 uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
@@ -120,8 +120,7 @@ uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
    return 0;
 }// kcall_ipc_call
 
-/* Userspace */
-
+#if defined(__RISCV__) || defined(__riscv)
 uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr) {
    register uintptr_t a7 asm("a7") = KCALL_IPC_SEND;
    register uintptr_t a0 asm("a0") = dest_pid;
@@ -160,12 +159,84 @@ uint32_t user_get_pid_by_gid(uint32_t gid) {
    asm volatile("ecall" : "+r"(a0) : "r"(a7) : "memory");
    return (uint32_t)a0;
 }// user_get_pid_by_gid
+#elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr) {
+   uintptr_t ret;
+   asm volatile("int $0x80" : "=a"(ret) : "a"(KCALL_IPC_SEND), "b"(dest_pid), "c"(message_ptr) : "memory");
+   return (uint32_t)ret;
+}// user_ipc_send
+
+uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf) {
+   uintptr_t ret;
+   asm volatile("int $0x80" : "=a"(ret) : "a"(KCALL_IPC_RECV), "b"(src_pid), "c"(message_buf) : "memory");
+   return (uint32_t)ret;
+}// user_ipc_recv
+
+uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
+   uintptr_t ret;
+   asm volatile("int $0x80" : "=a"(ret) : "a"(KCALL_IPC_CALL), "b"(dest_pid), "c"(msg), "d"(reply) : "memory");
+   return (uint32_t)ret;
+}// user_ipc_call
+
+uint32_t user_yield(void) {
+   uintptr_t ret;
+   asm volatile("int $0x80" : "=a"(ret) : "a"(KCALL_YIELD) : "memory");
+   return (uint32_t)ret;
+}// user_yield
+
+uint32_t user_get_pid_by_gid(uint32_t gid) {
+   uintptr_t ret;
+   asm volatile("int $0x80" : "=a"(ret) : "a"(KCALL_GET_PID_BY_GID), "b"(gid) : "memory");
+   return (uint32_t)ret;
+}// user_get_pid_by_gid
+#elif defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
+uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr) {
+   register uintptr_t r7 asm("r7") = KCALL_IPC_SEND;
+   register uintptr_t r0 asm("r0") = dest_pid;
+   register uintptr_t r1 asm("r1") = (uintptr_t)message_ptr;
+   asm volatile("svc #0" : "+r"(r0) : "r"(r7), "r"(r1) : "memory");
+   return (uint32_t)r0;
+}// user_ipc_send
+
+uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf) {
+   register uintptr_t r7 asm("r7") = KCALL_IPC_RECV;
+   register uintptr_t r0 asm("r0") = src_pid;
+   register uintptr_t r1 asm("r1") = (uintptr_t)message_buf;
+   asm volatile("svc #0" : "+r"(r0) : "r"(r7), "r"(r1) : "memory");
+   return (uint32_t)r0;
+}// user_ipc_recv
+
+uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
+   register uintptr_t r7 asm("r7") = KCALL_IPC_CALL;
+   register uintptr_t r0 asm("r0") = dest_pid;
+   register uintptr_t r1 asm("r1") = (uintptr_t)msg;
+   register uintptr_t r2 asm("r2") = (uintptr_t)reply;
+   asm volatile("svc #0" : "+r"(r0) : "r"(r7), "r"(r1), "r"(r2) : "memory");
+   return (uint32_t)r0;
+}// user_ipc_call
+
+uint32_t user_yield(void) {
+   register uintptr_t r7 asm("r7") = KCALL_YIELD;
+   register uintptr_t r0 asm("r0") = 0;
+   asm volatile("svc #0" : "+r"(r0) : "r"(r7) : "memory");
+   return (uint32_t)r0;
+}// user_yield
+
+uint32_t user_get_pid_by_gid(uint32_t gid) {
+   register uintptr_t r7 asm("r7") = KCALL_GET_PID_BY_GID;
+   register uintptr_t r0 asm("r0") = gid;
+   asm volatile("svc #0" : "+r"(r0) : "r"(r7) : "memory");
+   return (uint32_t)r0;
+}// user_get_pid_by_gid
+#endif
 
 void test_call(void) {
+#if defined(__RISCV__) || defined(__riscv)
    uintptr_t call;
    asm volatile("csrr %0, mepc" : "=r"(call));
    call += 4;
    asm volatile("csrw mepc, %0" :: "r"(call));
+#endif
    successn("syscall working");
 }// test_call
 
