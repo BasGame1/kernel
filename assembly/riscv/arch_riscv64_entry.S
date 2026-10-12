@@ -4,9 +4,12 @@
 
 _start64:
    la sp, stack_top_64
-   li t0, -1
+   la t0, _end
+   srli t0, t0, 2
    csrw pmpaddr0, t0
-   li t1, 0x1F
+   li t0, -1
+   csrw pmpaddr1, t0
+   li t1, 0x0F08
    csrw pmpcfg0, t1
    call kernel_init
 1:
@@ -20,6 +23,9 @@ _start64:
 
 trap_vector_64:
    csrrw sp, mscratch, sp
+   bnez sp, 1f
+   csrrw sp, mscratch, sp
+1:
    addi sp, sp, -256
    sd x1, 8(sp)
    csrr x1, mepc

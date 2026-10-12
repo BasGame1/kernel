@@ -2,11 +2,13 @@
     . section .text.init
 
 _start: 
-   la t0, _end
    la sp, stack_top
-   li t0, 0xFFFFFFFF
+   la t0, _end
+   srli t0, t0, 2
    csrw pmpaddr0, t0
-   li t1, 0x0F
+   li t0, 0xFFFFFFFF
+   csrw pmpaddr1, t0
+   li t1, 0x0F08
    csrw pmpcfg0, t1
    call kernel_init
 1:

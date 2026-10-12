@@ -3,9 +3,8 @@
 
 _enteruserspace:
    #if defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
-       #if defined(__ARM__)
-          #if !defined(__32BIT__)
-              msr sp_el0, x0
+       #if defined(__aarch64__) || !defined(__32BIT__)
+           msr sp_el0, x0
 				  mov x1, #0
 				  mov x2, #0
 				  mov x3, #0
@@ -57,9 +56,8 @@ _enteruserspace:
 				  cps #0x10
 				  bx lr
           #endif
-      #endif
-    #elif defined(__X86__)
-       #if !defined(__32BIT__)
+    #elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+       #if defined(__x86_64__) || !defined(__32BIT__)
 		     mov %rdi, %rsp
 		     xor %rax, %rax
 		     xor %rbx, %rbx

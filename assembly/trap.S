@@ -8,6 +8,7 @@ trap_vector:
     csrrw sp, mscratch, sp
     bnez sp, 1f
     csrrw sp, mscratch, sp
+1:
     addi sp, sp, -128
     sw x1, 4(sp)
     csrr x1, mepc
