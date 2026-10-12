@@ -375,6 +375,7 @@ pub fn trap_handler(mail: &mut Mail) {
         3 => {
             let mut hasher = Sha256::new();
             hasher.update(safe_slice);
+            hasher.update(KERNEL_UPDATE_KEY);
             let digest = hasher.finalize();
             let sig_len = core::cmp::min(mail.signature_len as usize, 64);
             let given_sig = &mail.signature[..sig_len];
