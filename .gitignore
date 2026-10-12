@@ -24,3 +24,4 @@ neo/target
 neo/src/*.bin
 neo/src/*.key
 neo/src/*.sig
+security*
