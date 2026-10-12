@@ -1,13 +1,22 @@
 CC ?= gcc
 CFLAGS ?=
 
-SRC = boot.S trap.S umode.S
+ifeq ($(findstring -D__ARM__,$(CFLAGS)),-D__ARM__)
+BOOT_SRC = arm/arch_arm_entry.S
+else ifeq ($(findstring -D__X86__,$(CFLAGS)),-D__X86__)
+BOOT_SRC = x86/arch_x86_entry.S
+else ifeq ($(findstring -D__64BIT__,$(CFLAGS)),-D__64BIT__)
+BOOT_SRC = riscv/arch_riscv64_entry.S
+else
+BOOT_SRC = riscv/arch_riscv32_entry.S
+endif
+
 OBJECTS = boot.o trap.o umode.o
 COMBINED_OBJECTS = $(OUT)/$(notdir $(CURDIR)).o
 
 all: $(COMBINED_OBJECTS)
 
-boot.o: boot.S
+boot.o: $(BOOT_SRC)
 	sed -e 's/\.[[:space:]]\+/./g' $< | $(CC) $(CFLAGS) -c -x assembler - -o $@
 
 trap.o: trap.S
