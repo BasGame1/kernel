@@ -74,7 +74,7 @@ uintptr_t allocate_memory() {
    infon("Allocating memory");
    if ( head == 0 ) {
       errorn("Out of Memory");
-      //TODO, add case for oom
+      return 0;
    }// if to see if oom
    uintptr_t free_page = (uintptr_t) head;
    uintptr_t *next_free_page = head;

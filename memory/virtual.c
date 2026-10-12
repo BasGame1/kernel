@@ -21,6 +21,10 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
       // Level 2 does not exist
       infon("Level 2 does not exist, creating");
       uintptr_t *level2_table = (uintptr_t *) allocate_memory();
+      if (!level2_table) {
+         errorn("Level 2 allocation failed: out of memory");
+         return;
+      }
       memset(level2_table,0,4096);
       root_directory[vpn] = ((uintptr_t)level2_table >> 2) | 1;
       pte = root_directory[vpn];
@@ -33,11 +37,15 @@ void map_virtual_memory(uintptr_t *root_directory, uintptr_t virtual_address, ui
 
 void init_virtual_memory() {
    root_directory = (uintptr_t *) allocate_memory();
+   if (!root_directory) {
+      fatal("Failed to allocate root page table");
+      return;
+   }
    memset(root_directory,0,4096);
    uint32_t address = START_MEMORY;
    uint32_t end_address = get_end_of_memory();
    while (address < end_address) {
-      map_virtual_memory(root_directory, address, address, (PTE_RWX | PTE_U));
+      map_virtual_memory(root_directory, address, address, PTE_RWX);
       address += 0x1000; // 4096      
    }// while
    successn("Mapped the virtual addresses");
