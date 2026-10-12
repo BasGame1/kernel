@@ -5,6 +5,7 @@
 #include "../include/userspace.h"
 
 #ifdef __USE_ANTARTICA__
+#include "../include/antartica.h"
 extern long antartica_syscall_dispatch(struct trap_frame *frame);
 #endif
 
@@ -122,42 +123,42 @@ uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
 /* Userspace */
 
 uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr) {
-   register uint32_t a7 asm("a7") = KCALL_IPC_SEND;
-   register uint32_t a0 asm("a0") = dest_pid;
-   register uint32_t a1 asm("a1") = (uint32_t)message_ptr;
+   register uintptr_t a7 asm("a7") = KCALL_IPC_SEND;
+   register uintptr_t a0 asm("a0") = dest_pid;
+   register uintptr_t a1 asm("a1") = (uintptr_t)message_ptr;
    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a1) : "memory");
-   return a0;
+   return (uint32_t)a0;
 }// user_ipc_send
 
 uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf) {
-   register uint32_t a7 asm("a7") = KCALL_IPC_RECV;
-   register uint32_t a0 asm("a0") = src_pid;
-   register uint32_t a1 asm("a1") = (uint32_t)message_buf;
+   register uintptr_t a7 asm("a7") = KCALL_IPC_RECV;
+   register uintptr_t a0 asm("a0") = src_pid;
+   register uintptr_t a1 asm("a1") = (uintptr_t)message_buf;
    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a1) : "memory");
-   return a0;
+   return (uint32_t)a0;
 }// user_ipc_recv
 
 uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
-   register uint32_t a7 asm("a7") = KCALL_IPC_CALL;
-   register uint32_t a0 asm("a0") = dest_pid;
-   register uint32_t a1 asm("a1") = (uint32_t)msg;
-   register uint32_t a2 asm("a2") = (uint32_t)reply;
+   register uintptr_t a7 asm("a7") = KCALL_IPC_CALL;
+   register uintptr_t a0 asm("a0") = dest_pid;
+   register uintptr_t a1 asm("a1") = (uintptr_t)msg;
+   register uintptr_t a2 asm("a2") = (uintptr_t)reply;
    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a1), "r"(a2) : "memory");
-   return a0;
+   return (uint32_t)a0;
 }// user_ipc_call
 
 uint32_t user_yield(void) {
-   register uint32_t a7 asm("a7") = KCALL_YIELD;
-   register uint32_t a0 asm("a0") = 0;
+   register uintptr_t a7 asm("a7") = KCALL_YIELD;
+   register uintptr_t a0 asm("a0") = 0;
    asm volatile("ecall" : "+r"(a0) : "r"(a7) : "memory");
-   return a0;
+   return (uint32_t)a0;
 }// user_yield
 
 uint32_t user_get_pid_by_gid(uint32_t gid) {
-   register uint32_t a7 asm("a7") = KCALL_GET_PID_BY_GID;
-   register uint32_t a0 asm("a0") = gid;
+   register uintptr_t a7 asm("a7") = KCALL_GET_PID_BY_GID;
+   register uintptr_t a0 asm("a0") = gid;
    asm volatile("ecall" : "+r"(a0) : "r"(a7) : "memory");
-   return a0;
+   return (uint32_t)a0;
 }// user_get_pid_by_gid
 
 void test_call(void) {

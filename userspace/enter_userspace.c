@@ -2,12 +2,23 @@
 
 #include "../include/kernel.h"
 #include "../include/userspace.h"
+#include "../include/memory.h"
 
 extern void _enteruserspace(uintptr_t user_stack_top);
 
 void userspace_init() {
-   uint32_t user_stack = (allocate_memory() + 4096);
-   uint32_t kernel_trap_stack = (allocate_memory() + 4096);
+   uintptr_t user_stack_page = allocate_memory();
+   uintptr_t kernel_trap_stack_page = allocate_memory();
+   if (!user_stack_page || !kernel_trap_stack_page) {
+      fatal("Failed to allocate initial userspace stacks");
+      return;
+   }
+   uintptr_t user_stack = user_stack_page + 4096;
+   uintptr_t kernel_trap_stack = kernel_trap_stack_page + 4096;
+   extern uintptr_t *root_directory;
+   if (root_directory) {
+      map_virtual_memory(root_directory, user_stack_page, user_stack_page, (PTE_RWX | PTE_U));
+   }
    asm volatile("csrw mscratch, %0" :: "r"(kernel_trap_stack));
    infon("Starting and entering userspace");
    enter_userspace((uintptr_t)test_user_program, user_stack);

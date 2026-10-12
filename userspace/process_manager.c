@@ -5,6 +5,7 @@
 #include "../include/kernel.h"
 #include "../include/userspace.h"
 #include "../include/gid.h"
+#include "../include/memory.h"
 
 struct process processes[MAX_PROCESSES];
 int current_pid = -1;
@@ -91,11 +92,23 @@ uint32_t create_process(void *entry, uint32_t gid) {
       return (uint32_t)-1;
    }// if
 
-   uintptr_t user_stack = allocate_memory() + 4096;
-   uintptr_t kernel_stack = allocate_memory() + 4096;
+   uintptr_t user_stack_page = allocate_memory();
+   uintptr_t kernel_stack_page = allocate_memory();
+   if (!user_stack_page || !kernel_stack_page) {
+      errorn("Cant allocate stack pages for new process");
+      if (user_stack_page) free_memory((uintptr_t *)user_stack_page);
+      if (kernel_stack_page) free_memory((uintptr_t *)kernel_stack_page);
+      return (uint32_t)-1;
+   }// if
+   uintptr_t user_stack = user_stack_page + 4096;
+   uintptr_t kernel_stack = kernel_stack_page + 4096;
+   extern uintptr_t *root_directory;
+   if (root_directory) {
+      map_virtual_memory(root_directory, user_stack_page, user_stack_page, (PTE_RWX | PTE_U));
+   }
    struct trap_frame *frame = (struct trap_frame *)(kernel_stack - sizeof(struct trap_frame));
    memset(frame, 0, sizeof(struct trap_frame));
-   frame->mepc = (uint32_t)(uintptr_t)entry;
+   frame->mepc = (uintptr_t)entry;
    frame->sp = user_stack;
    
    processes[unoccupied_process].sid = generate_sid(gid, (uintptr_t)entry);

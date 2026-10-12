@@ -5,6 +5,7 @@
 #include "../include/kernel.h"
 #include "../include/memory.h"
 #include "../include/userspace.h"
+#include "../include/hardware.h"
     
 #ifdef __DISABLE_GID810_PKCALL__
     #define MAX_DRIVER_GID 8
@@ -79,6 +80,14 @@
 #endif
 
 uint32_t pkcall_map_device(uintptr_t phys_addr, uintptr_t virt_addr) {
+   if (phys_addr < START_HARDWARE_ADDRESS || phys_addr >= END_HARDWARE_ADDRESS) {
+      errorn("pkcall: invalid device physical address");
+      return (uint32_t)-1;
+   }// if
+   if (virt_addr >= START_MEMORY && virt_addr < END_MEMORY) {
+      errorn("pkcall: invalid device virtual address (collides with kernel)");
+      return (uint32_t)-1;
+   }// if
    extern uintptr_t *root_directory;
    map_virtual_memory(root_directory, virt_addr, phys_addr, (PTE_RWX | PTE_U));
    asm volatile("sfence.vma zero, zero");
