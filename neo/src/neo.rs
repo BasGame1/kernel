@@ -405,21 +405,16 @@ pub fn trap_handler(mail: &mut Mail) {
             }// if
         }// is malware
         5 => {
-            // Obfuscation check: decode creator key using SEED on the fly
             let mut matched = true;
-            if safe_slice.len() != CREATOR_KEY.len() {
+            if safe_slice.len() != CREATOR_KEY.len() || SEED.is_empty() || CREATOR_KEY.is_empty() {
                 matched = false;
             } else {
-                if SEED.is_empty() || CREATOR_KEY.is_empty() {
-                   mail.status = STATUS_ERR_AUTH_FAILED;
-                   matched = false;
-                }// if fix by 0 division
                 for i in 0..safe_slice.len() {
                     let seed_byte = SEED[i % SEED.len()];
                     let expected_plain = CREATOR_KEY[i] ^ seed_byte;
                     if safe_slice[i] != expected_plain {
                         matched = false;
-                    } // if
+                    }// if
                 }// for
             }// if
             if matched {
@@ -429,7 +424,7 @@ pub fn trap_handler(mail: &mut Mail) {
                 unsafe { IS_AUTHENTICATED = false; }
                 mail.status = STATUS_ERR_AUTH_FAILED;
             }// if
-        } // validate creds
+        }// validate creds
         6 => {
            if unsafe { !IS_AUTHENTICATED } {
               mail.status = STATUS_ERR_AUTH_FAILED;
@@ -448,16 +443,18 @@ pub fn trap_handler(mail: &mut Mail) {
         7 => {
            if unsafe { !IS_AUTHENTICATED } {
             mail.status = STATUS_ERR_AUTH_FAILED;
-           } else unsafe {
-              if SSH_KEY_ACTIVE {
-                 mail.payload[..ACTIVE_SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY[..ACTIVE_SSH_KEY_LEN]);
-                 mail.payload_len = ACTIVE_SSH_KEY_LEN as u32;
-                 mail.status = STATUS_SUCCESS;
-              } else {
+           } else {
+              unsafe {
+                 if SSH_KEY_ACTIVE {
+                    mail.payload[..ACTIVE_SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY[..ACTIVE_SSH_KEY_LEN]);
+                    mail.payload_len = ACTIVE_SSH_KEY_LEN as u32;
+                    mail.status = STATUS_SUCCESS;
+                 } else {
                  mail.status = STATUS_ERR_AUTH_FAILED;
-              }// if
-           }// unsafe
-        }// ssh
+                 }// if
+             }// unsafe
+          }// if
+        }// 7
         _ => {
             mail.status = STATUS_ERR_INVALID_CMD;
         }// default case
