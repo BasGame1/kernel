@@ -4,25 +4,25 @@
 extern void fatal(char *reason);
 extern char* concat(char *hardcoded_text, char *reason);
 
-// utils for getting the register
 int read_mtval() {
+#if defined(__RISCV__) || defined(__riscv)
    int value;
    asm volatile("csrr %0, mtval" : "=r" (value));
    return value;
+#else
+   return 0;
+#endif
 }// read_mtval
 
 int read_mpec() {
+#if defined(__RISCV__) || defined(__riscv)
    int address;
    asm volatile("csrr %0, mepc" : "=r" (address));
    return address;
+#else
+   return 0;
+#endif
 }// read_mpec
-
-/* Functions of all the handlers for errors
- * Userspace is still not implemented, so there 
- * are only declarations of the functions
- */ 
-
-/* unkown error */
 
 void unknown_error() {
    fatal("Unknown Error occurred");
@@ -31,16 +31,6 @@ void unknown_error() {
 void unkown_error() {
    unknown_error();
 }// unkown_error
-
-
-/* hardware (interrupts) */
-
-// On header file, only declared //
-
-
-/* Software (exceptions) */
- 
-// Rest on header file, only declared //
 
 void handle_illegal_instruction() {
    int hex = read_mtval();
@@ -51,7 +41,7 @@ void handle_illegal_instruction() {
    char *error_message_cause = concat(", caused by: ", "unknown");
    char *error_message = concat(error_message_address, error_message_cause);
    fatal(error_message);
-}// handle__illegal_instructions
+}// handle_illegal_instruction
 
 void handle_store_access_error() {
   int address = read_mtval();
@@ -60,7 +50,7 @@ void handle_store_access_error() {
   char *error_message_cause = concat(", caused by", " unknown");
   char *error_message = concat(error_message_address, error_message_cause);
   fatal(error_message);
-}// handle_store_access_error & handle_load_access_error [via macro]
+}// handle_store_access_error
 
 void handle_load_access_error() {
    handle_store_access_error();
@@ -74,4 +64,13 @@ void handle_load_page_error() {}// handle_load_page_error
 void handle_store_page_error() {}// handle_store_page_error
 void handle_instruction_page_error() {}// handle_instruction_page_error
 void handle_breakpoint() {}// handle_breakpoint
+
+void __stack_chk_fail(void) {
+   fatal("Stack smash detected");
+}// __stack_chk_fail
+
+void __attribute__((visibility("hidden"))) __stack_chk_fail_local(void) {
+   fatal("Stack smash detected");
+}// __stack_chk_fail_local
+
 
