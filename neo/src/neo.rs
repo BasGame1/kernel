@@ -178,7 +178,7 @@ fn parse_malware_list() {
             i += 2;
             continue;
         }// if
-        if bytes[i] == b'\n' || bytes[i] == b'\r' || bytes[i] == b' ' {
+        if bytes[i] == b'\n' || bytes[i] == b'\r' || bytes[i] == b' ' || bytes[i] == b'\t' {
             i += 1;
             continue;
         }// if
@@ -486,7 +486,8 @@ pub extern "C" fn boot_neo(mailbox_addr: usize, kernel_base: usize, kernel_len: 
         if patrol_counter >= PATROL_LIMIT {
             patrol_counter = 0;
             let mut patrol_hasher = Sha256::new();
-            patrol_hasher.update(kernel_slice);
+            let ro_slice = unsafe { core::slice::from_raw_parts(kernel_ro_base as *const u8, kernel_ro_len) };
+patrol_hasher.update(ro_slice);
             if !constant_time_eq(&patrol_hasher.finalize(), exp_hash) {
                 security_panic(mail);
             }// if
