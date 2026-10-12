@@ -1,6 +1,8 @@
 #include "../include/antartica.h"
 #include "../include/gid.h"
 
+const linux_syscall_fn linux_syscall_table[LINUX_SYSCALL_COUNT] = { 0 };
+
 void antartica_init(void) {
    infon("Init antartica");
    successn("Antartica initialized with 467 syscall entry table");
