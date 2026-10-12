@@ -3,4 +3,5 @@
 
 _enteruserspace:
     mv sp, a0
+    li reg, 0
     mret
