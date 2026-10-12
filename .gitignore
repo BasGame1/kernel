@@ -19,3 +19,8 @@ include/gen
 crypto/
 creds/
 security*.md
+neo/Cargo.lock
+neo/target
+neo/src/*.bin
+neo/src/*.key
+neo/src/*.sig
