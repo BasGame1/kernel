@@ -37,6 +37,8 @@ pub struct Mail {
     pub random: u64,
 }// mail
 
+static mut IS_AUTHENTICATED: bool = false;
+static mut ACTIVE_SSH_KEY_LEN: usize = 0;
 static mut ACTIVE_SSH_KEY: [u8; SSH_KEY_LEN] = [0u8; SSH_KEY_LEN];
 static mut SSH_KEY_ACTIVE: bool = false;
 static mut MALWARE_DB: [[u8; HASH_LEN]; MAX_MALWARE_ENTRIES] = [[0u8; HASH_LEN]; MAX_MALWARE_ENTRIES];
@@ -356,10 +358,6 @@ pub fn trap_handler(mail: &mut Mail) {
 
     match mail.request {
         1 => {
-           if SEED.is_empty() || CREATOR_KEY.is_empty() {
-               mail.status = STATUS_ERR_AUTH_FAILED;
-               return;
-            }// if fix by 0 division
             let mut hasher = Sha256::new();
             hasher.update(safe_slice);
             mail.hash = hasher.finalize();
@@ -412,6 +410,10 @@ pub fn trap_handler(mail: &mut Mail) {
             if safe_slice.len() != CREATOR_KEY.len() {
                 matched = false;
             } else {
+                if SEED.is_empty() || CREATOR_KEY.is_empty() {
+                   mail.status = STATUS_ERR_AUTH_FAILED;
+                   return;
+                }// if fix by 0 division
                 for i in 0..safe_slice.len() {
                     let seed_byte = SEED[i % SEED.len()];
                     let expected_plain = CREATOR_KEY[i] ^ seed_byte;
@@ -421,13 +423,15 @@ pub fn trap_handler(mail: &mut Mail) {
                 }// for
             }// if
             if matched {
+                unsafe { IS_AUTHENTICATED = true; }
                 mail.status = STATUS_SUCCESS;
             } else {
+                unsafe { IS_AUTHENTICATED = false; }
                 mail.status = STATUS_ERR_AUTH_FAILED;
             }// if
         } // validate creds
         6 => {
-           if !is_caller_authorized(mail) {
+           if unsafe { !IS_AUTHENTICATED } {
               mail.status = STATUS_ERR_AUTH_FAILED;
            } else if len <= SSH_KEY_LEN && len > 0 {
               unsafe {
@@ -442,8 +446,8 @@ pub fn trap_handler(mail: &mut Mail) {
            }//if 
         }// 6
         7 => {
-           if !is_caller_authorized(mail) {
-              mail.status = STATUS_ERR_AUTH_FAILED;
+           if unsafe { !IS_AUTHENTICATED } {
+            mail.status = STATUS_ERR_AUTH_FAILED;
            } else unsafe {
               if SSH_KEY_ACTIVE {
                  mail.payload[..ACTIVE_SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY[..ACTIVE_SSH_KEY_LEN]);
