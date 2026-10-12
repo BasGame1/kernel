@@ -1,10 +1,3 @@
-/*
- * Ported from the Linux kernel (drivers/tty/serial/8250/)
- * Copyright (C) Linus Torvalds and Linux kernel contributors.
- * Licensed under GNU General Public License (GPL) v2.0.
- * Adapted for Antartica microkernel hardware abstraction layer.
- */
-
 #include "../include/drivers.h"
 
 #define UART_RBR_OFFSET 0
@@ -27,10 +20,23 @@
 #define UART_FCR_CLEAR 0x06
 
 static inline uint8_t serial8250_in(uintptr_t base, uint32_t offset) {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   if (base < 0x10000) {
+      uint8_t ret;
+      asm volatile("inb %1, %0" : "=a"(ret) : "Nd"((uint16_t)(base + offset)));
+      return ret;
+   }// if
+#endif
    return *(volatile uint8_t *)(base + offset);
 }// serial8250_in
 
 static inline void serial8250_out(uintptr_t base, uint32_t offset, uint8_t val) {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   if (base < 0x10000) {
+      asm volatile("outb %0, %1" : : "a"(val), "Nd"((uint16_t)(base + offset)));
+      return;
+   }// if
+#endif
    *(volatile uint8_t *)(base + offset) = val;
 }// serial8250_out
 
