@@ -12,9 +12,10 @@ void kcall_analyze(struct trap_frame *frame) {
    frame->mepc += 4;
 
 #ifdef __USE_ANTARTICA__
-   if (frame->a7 < 467) {
-      antartica_syscall_dispatch(frame);
-      return;
+   if (frame->a7 >= 1000 && frame->a7 < 1000 + LINUX_SYSCALL_COUNT) {
+     frame->a7 -= 1000;
+     antartica_syscall_dispatch(frame);
+     return;
    }// if
 #endif
 
