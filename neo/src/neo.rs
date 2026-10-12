@@ -71,9 +71,9 @@ fn get_cpu_timer_cycles() -> u64 {
 
     #[cfg(target_arch = "riscv32")]
     unsafe {
-        let low: u32;
-        let high: u32;
-        let high_recheck: u32;
+        let mut low: u32;
+        let mut high: u32;
+        let mut high_recheck: u32;
         loop {
             asm!("rdtimeh {0}", out(reg) high, options(nomem, nostack));
             asm!("rdtime {0}", out(reg) low, options(nomem, nostack));
@@ -333,8 +333,14 @@ impl Sha256 {
     }// finalize
 }// sha256
 
-fn security_panic(mail: &mut Mail) -> ! {
-    mail.status = STATUS_PANIC;
+static mut PRIVATE_BUFFER: [u8; MAX_PAYLOAD_SIZE] = [0u8; MAX_PAYLOAD_SIZE];
+
+fn security_panic(mail_ptr: *mut Mail) -> ! {
+    if !mail_ptr.is_null() {
+        unsafe {
+            core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).status), STATUS_PANIC);
+        }
+    }
     compiler_fence(Ordering::SeqCst);
     loop {
         #[cfg(target_arch = "x86_64")]
@@ -346,44 +352,65 @@ fn security_panic(mail: &mut Mail) -> ! {
     }// loop
 }// security_panic
 
-pub fn trap_handler(mail: &mut Mail) {
-    if mail.payload_len as usize > MAX_PAYLOAD_SIZE {
-        mail.status = STATUS_ERR_PAYLOAD_OVERSIZED;
+pub fn trap_handler(mail_ptr: *mut Mail) {
+    if mail_ptr.is_null() {
         return;
-    }// if
-    let len = mail.payload_len as usize;
-    let mut private_buffer = [0u8; MAX_PAYLOAD_SIZE];
-    private_buffer[..len].copy_from_slice(&mail.payload[..len]);
-    let safe_slice = &private_buffer[..len];
+    }
+    let req = unsafe { core::ptr::read_volatile(core::ptr::addr_of!((*mail_ptr).request)) };
+    let payload_len = unsafe { core::ptr::read_volatile(core::ptr::addr_of!((*mail_ptr).payload_len)) } as usize;
+    if payload_len > MAX_PAYLOAD_SIZE {
+        unsafe {
+            core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).status), STATUS_ERR_PAYLOAD_OVERSIZED);
+            core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).request), 0);
+        }
+        compiler_fence(Ordering::SeqCst);
+        return;
+    }
 
-    match mail.request {
+    let safe_slice = unsafe {
+        let buf_ptr = core::ptr::addr_of_mut!(PRIVATE_BUFFER) as *mut u8;
+        let payload_ptr = core::ptr::addr_of!((*mail_ptr).payload) as *const u8;
+        core::ptr::copy_nonoverlapping(payload_ptr, buf_ptr, payload_len);
+        core::slice::from_raw_parts(buf_ptr, payload_len)
+    };
+
+    let mut status = STATUS_SUCCESS;
+
+    match req {
         1 => {
             let mut hasher = Sha256::new();
             hasher.update(safe_slice);
-            mail.hash = hasher.finalize();
-            mail.status = STATUS_SUCCESS;
+            let h = hasher.finalize();
+            unsafe {
+                core::ptr::copy_nonoverlapping(h.as_ptr(), core::ptr::addr_of_mut!((*mail_ptr).hash) as *mut u8, HASH_LEN);
+            }
         }// get hash
         2 => {
             let rnd = get_random_number();
             if rnd != 0 {
-                mail.random = rnd;
-                mail.status = STATUS_SUCCESS;
+                unsafe {
+                    core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).random), rnd);
+                }
             } else {
-                mail.status = STATUS_ERR_RANDOM_FAILED;
-            }// if
+                status = STATUS_ERR_RANDOM_FAILED;
+            }
         }// get random
         3 => {
             let mut hasher = Sha256::new();
             hasher.update(safe_slice);
             hasher.update(KERNEL_UPDATE_KEY);
             let digest = hasher.finalize();
-            let sig_len = core::cmp::min(mail.signature_len as usize, 64);
-            let given_sig = &mail.signature[..sig_len];
-            if sig_len >= 32 && constant_time_eq(&digest, &given_sig[..32]) {
-                mail.status = STATUS_SUCCESS;
+            let sig_len = unsafe { core::ptr::read_volatile(core::ptr::addr_of!((*mail_ptr).signature_len)) } as usize;
+            let eff_sig_len = core::cmp::min(sig_len, 64);
+            let mut given_sig = [0u8; 64];
+            unsafe {
+                core::ptr::copy_nonoverlapping(core::ptr::addr_of!((*mail_ptr).signature) as *const u8, given_sig.as_mut_ptr(), eff_sig_len);
+            }
+            if eff_sig_len >= 32 && constant_time_eq(&digest, &given_sig[..32]) {
+                status = STATUS_SUCCESS;
             } else {
-                mail.status = STATUS_ERR_SIG_MISMATCH;
-            }// if
+                status = STATUS_ERR_SIG_MISMATCH;
+            }
         }// check signature
         4 => {
             let mut hasher = Sha256::new();
@@ -396,13 +423,13 @@ pub fn trap_handler(mail: &mut Mail) {
                 if constant_time_eq(&file_hash, db_hash) {
                     is_found = true;
                     break;
-                }// if
-            }// for
+                }
+            }
             if is_found {
-                mail.status = STATUS_MALWARE_DETECTED;
+                status = STATUS_MALWARE_DETECTED;
             } else {
-                mail.status = STATUS_SUCCESS;
-            }// if
+                status = STATUS_SUCCESS;
+            }
         }// is malware
         5 => {
             let mut matched = true;
@@ -414,86 +441,93 @@ pub fn trap_handler(mail: &mut Mail) {
                     let expected_plain = CREATOR_KEY[i] ^ seed_byte;
                     if safe_slice[i] != expected_plain {
                         matched = false;
-                    }// if
-                }// for
-            }// if
+                    }
+                }
+            }
             if matched {
                 unsafe { IS_AUTHENTICATED = true; }
-                mail.status = STATUS_SUCCESS;
+                status = STATUS_SUCCESS;
             } else {
                 unsafe { IS_AUTHENTICATED = false; }
-                mail.status = STATUS_ERR_AUTH_FAILED;
-            }// if
+                status = STATUS_ERR_AUTH_FAILED;
+            }
         }// validate creds
         6 => {
-           if unsafe { !IS_AUTHENTICATED } {
-              mail.status = STATUS_ERR_AUTH_FAILED;
-           } else if len <= SSH_KEY_LEN && len > 0 {
-              unsafe {
-                 ACTIVE_SSH_KEY = [0u8; SSH_KEY_LEN];
-                 ACTIVE_SSH_KEY[..len].copy_from_slice(safe_slice);
-                 ACTIVE_SSH_KEY_LEN = len;
-                 SSH_KEY_ACTIVE = true;
-              }// unsafe
-              mail.status = STATUS_SUCCESS;
-           } else {
-              mail.status = STATUS_ERR_PAYLOAD_OVERSIZED;
-           }//if 
+            if unsafe { !IS_AUTHENTICATED } {
+                status = STATUS_ERR_AUTH_FAILED;
+            } else if payload_len <= SSH_KEY_LEN && payload_len > 0 {
+                unsafe {
+                    ACTIVE_SSH_KEY = [0u8; SSH_KEY_LEN];
+                    ACTIVE_SSH_KEY[..payload_len].copy_from_slice(safe_slice);
+                    ACTIVE_SSH_KEY_LEN = payload_len;
+                    SSH_KEY_ACTIVE = true;
+                }
+                status = STATUS_SUCCESS;
+            } else {
+                status = STATUS_ERR_PAYLOAD_OVERSIZED;
+            }
         }// 6
         7 => {
-           if unsafe { !IS_AUTHENTICATED } {
-            mail.status = STATUS_ERR_AUTH_FAILED;
-           } else {
-              unsafe {
-                 if SSH_KEY_ACTIVE {
-                    mail.payload[..ACTIVE_SSH_KEY_LEN].copy_from_slice(&ACTIVE_SSH_KEY[..ACTIVE_SSH_KEY_LEN]);
-                    mail.payload_len = ACTIVE_SSH_KEY_LEN as u32;
-                    mail.status = STATUS_SUCCESS;
-                 } else {
-                 mail.status = STATUS_ERR_AUTH_FAILED;
-                 }// if
-             }// unsafe
-          }// if
+            if unsafe { !IS_AUTHENTICATED } {
+                status = STATUS_ERR_AUTH_FAILED;
+            } else {
+                unsafe {
+                    if SSH_KEY_ACTIVE {
+                        let dest_ptr = core::ptr::addr_of_mut!((*mail_ptr).payload) as *mut u8;
+                        let src_ptr = core::ptr::addr_of!(ACTIVE_SSH_KEY) as *const u8;
+                        core::ptr::copy_nonoverlapping(src_ptr, dest_ptr, ACTIVE_SSH_KEY_LEN);
+                        core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).payload_len), ACTIVE_SSH_KEY_LEN as u32);
+                        status = STATUS_SUCCESS;
+                    } else {
+                        status = STATUS_ERR_AUTH_FAILED;
+                    }
+                }
+            }
         }// 7
         _ => {
-            mail.status = STATUS_ERR_INVALID_CMD;
-        }// default case
-    }// match
-    mail.request = 0;
+            status = STATUS_ERR_INVALID_CMD;
+        }
+    }
+
+    unsafe {
+        core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).status), status);
+        core::ptr::write_volatile(core::ptr::addr_of_mut!((*mail_ptr).request), 0);
+    }
     compiler_fence(Ordering::SeqCst);
 }// trap_handler
 
 #[no_mangle]
 pub extern "C" fn boot_neo(mailbox_addr: usize, kernel_base: usize, kernel_len: usize, expected_kernel_hash: *const u8) -> ! {
-    let mail = unsafe { core::ptr::read_volatile(&mailbox_addr) }
+    let mail_ptr = mailbox_addr as *mut Mail;
     let exp_hash = unsafe { core::slice::from_raw_parts(expected_kernel_hash, HASH_LEN) };
     let kernel_slice = unsafe { core::slice::from_raw_parts(kernel_base as *const u8, kernel_len) };
     let mut hasher = Sha256::new();
     hasher.update(kernel_slice);
     let current_kernel_hash = hasher.finalize();
     if !constant_time_eq(&current_kernel_hash, exp_hash) {
-        security_panic(mail);
-    }// if
+        security_panic(mail_ptr);
+    }
     parse_malware_list();
     let mut patrol_counter = 0u32;
     const PATROL_LIMIT: u32 = 100_000;
     loop {
         compiler_fence(Ordering::SeqCst);
-        if mail.request != 0 {
-            trap_handler(mail);
-        }// if
+        let req = unsafe { core::ptr::read_volatile(core::ptr::addr_of!((*mail_ptr).request)) };
+        if req != 0 {
+            trap_handler(mail_ptr);
+        }
         patrol_counter = patrol_counter.wrapping_add(1);
         if patrol_counter >= PATROL_LIMIT {
             patrol_counter = 0;
             let mut patrol_hasher = Sha256::new();
-            let ro_slice = unsafe { core::slice::from_raw_parts(kernel_ro_base as *const u8, kernel_ro_len) };
-patrol_hasher.update(ro_slice);
+            let ro_slice = unsafe { core::slice::from_raw_parts(kernel_base as *const u8, kernel_len) };
+            patrol_hasher.update(ro_slice);
             if !constant_time_eq(&patrol_hasher.finalize(), exp_hash) {
-                security_panic(mail);
-            }// if
-        }// if
+                security_panic(mail_ptr);
+            }
+        }
         core::hint::spin_loop();
-    }// loop
+    }
 }// boot_neo
 
 #[panic_handler]
