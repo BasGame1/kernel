@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#define PATCH_MAGIC 0x4669677572653039
+#define PATCH_MAGIC 0x4669677572653039ULL
 
 struct patch_header {
-   uint32_t magic;
-   uint32_t signature;
+   uint64_t magic;
+   uint64_t signature;
    uint32_t old_size;
    uint32_t new_size;
    uint32_t chunk_count;
@@ -47,9 +47,30 @@ static uint8_t *read_file(const char *path, uint32_t *out_size) {
    return buf;
 }// read_file
 
+static uint64_t load_key(void) {
+   FILE *kf = fopen("creds/key", "r");
+   if (!kf) {
+      kf = fopen("../creds/key", "r");
+   }// if
+   if (!kf) {
+      const char *env_k = getenv("UPDATE_KEY");
+      if (env_k) {
+         return strtoull(env_k, NULL, 10);
+      }// if
+      return 0ULL;
+   }// if
+   char kbuf[64] = {0};
+   if (fgets(kbuf, sizeof(kbuf) - 1, kf) == NULL) {
+      fclose(kf);
+      return 0ULL;
+   }// if
+   fclose(kf);
+   return strtoull(kbuf, NULL, 10);
+}// load_key
+
 int main(int argc, char **argv) {
    if (argc < 4) {
-      fprintf(stderr, "Usage: %s <old_kernel> <new_kernel> <output_patch>\n", argv[0]);
+      fprintf(stderr, "Usage: %s <old_kernel> <new_kernel> <output_patch> [optional_key]\n", argv[0]);
       return 1;
    }// if
 
@@ -77,7 +98,6 @@ int main(int argc, char **argv) {
    uint32_t i = 0;
 
    while (i < new_size) {
-      // Find start of difference
       if (i >= old_size || new_buf[i] != old_buf[i]) {
          uint32_t start = i;
          while (i < new_size && (i >= old_size || new_buf[i] != old_buf[i])) {
@@ -101,8 +121,16 @@ int main(int argc, char **argv) {
       return 1;
    }// if
 
+   uint64_t signing_key = 0;
+   if (argc >= 5) {
+      signing_key = strtoull(argv[4], NULL, 10);
+   } else {
+      signing_key = load_key();
+   }// if
+
    struct patch_header hdr;
    hdr.magic = PATCH_MAGIC;
+   hdr.signature = signing_key ^ PATCH_MAGIC;
    hdr.old_size = old_size;
    hdr.new_size = new_size;
    hdr.chunk_count = chunk_count;
@@ -122,7 +150,7 @@ int main(int argc, char **argv) {
    free(old_buf);
    free(new_buf);
 
-   printf("generated %s: %u chunks, %u diff bytes (header: %zu bytes)\n",
-          argv[3], chunk_count, total_payload, sizeof(struct patch_header));
+   printf("generated %s: %u chunks, %u diff bytes (magic: 0x%llx, sig: 0x%llx)\n",
+          argv[3], chunk_count, total_payload, (unsigned long long)hdr.magic, (unsigned long long)hdr.signature);
    return 0;
 }// main
