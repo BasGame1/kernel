@@ -37,19 +37,28 @@ uint32_t install_update(char active_slot, const char *update_file) {
       write("/boot/kernel", base_buf, (uint32_t)new_sz, 0);
       memcpy((void *)0x80200000, base_buf, (uint32_t)new_sz);
       successn("Kernel patched into 0x80200000, handing off CPU");
-      // Kernel handoff
+#if defined(__RISCV__) || defined(__riscv)
       asm volatile("csrci mstatus, 8");
       asm volatile("csrw mie, zero");
       asm volatile("fence.i");
       asm volatile("fence");
       asm volatile("jr %0" :: "r"(0x80200000));
+#elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+      asm volatile("cli");
+      asm volatile("jmp *%0" :: "r"(0x80200000));
+#elif defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
+      asm volatile("cpsid i");
+      asm volatile("bx %0" :: "r"(0x80200000));
+#endif
       return 0;
-   } else {
+   }// if
+   else {
       errorn("Update failed, DO NOT REBOOT");
       if (revert_changes() == 0) {
          successn("Changes reverted, everything is fine now, just breathe");
          return 2;
-      } else {
+      }// if
+      else {
          errorn("Changes could not be reverted, say welcome to troubleshoot");
          return 3;
       }// if
