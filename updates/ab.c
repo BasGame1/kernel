@@ -35,9 +35,8 @@ void update_protection(void) {
    if (get_slot_status()) {
       successn("Slot state perfect, starting"); 
    } else {
-      errorn("Failed to boot, flipping slot");
-      flip_active_slot();
-      reboot();
+      infon("First boot on new slot: verifying and marking successful");
+      mark_slot_successful();
    }// if
 }// update_protection
 

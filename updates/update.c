@@ -32,9 +32,22 @@ int apply_patch(uint8_t *base_buf, uint32_t base_size, const uint8_t *patch_buf,
       return -1;
    }// if
    const uint8_t *ptr = patch_buf + sizeof(struct patch_header);
+   const uint8_t *patch_end = patch_buf + patch_size;
    for (uint32_t i = 0; i < hdr->chunk_count; i++) {
+      if (ptr + 8 > patch_end) {
+         errorn("Patch chunk header out of bounds");
+         return -1;
+      }// if
       uint32_t offset = *(const uint32_t *)ptr; ptr += 4;
       uint32_t len = *(const uint32_t *)ptr; ptr += 4;
+      if (ptr + len > patch_end || ptr + len < ptr) {
+         errorn("Patch chunk data out of bounds");
+         return -1;
+      }// if
+      if (offset + len > hdr->new_size || offset + len < offset) {
+         errorn("Patch chunk writes beyond destination bounds");
+         return -1;
+      }// if
       memcpy(base_buf + offset, ptr, len);
       ptr += len;
    }// for
@@ -79,6 +92,16 @@ bool get_slot_status(void) {
    }// if
    return (buf[1] == '1');
 }// get_slot_status
+
+void mark_slot_successful(void) {
+   char current = get_active_slot();
+   char buf[4];
+   buf[0] = current;
+   buf[1] = '1';
+   buf[2] = '\0';
+   write("/boot/slotstatus", buf, 2, 0);
+   successn("Marked active slot as successful");
+}// mark_slot_successful
 
 bool start_update(const char *update_file) {
    if (ntar_is_active()) {
