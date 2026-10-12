@@ -1,4 +1,3 @@
-// Makefile
 CONFIG ?= default-riscv
 CONFIG_FILE = $(CURDIR)/config/$(CONFIG)
 
@@ -10,6 +9,7 @@ else
 CC = riscv64-unknown-elf-gcc
 endif
 endif
+
 
 CONFIG_USE_ANTARTICA := $(shell grep '^[[:space:]]*USE_ANTARTICA=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 ifeq ($(strip $(CONFIG_USE_ANTARTICA)),1)
@@ -29,7 +29,6 @@ DIRS = assembly clock screen memory utils keyboard shell filesystem userspace up
 DIRS_ALL = assembly clock screen memory utils keyboard shell filesystem userspace updates drivers antartica
 OBJECTS = $(foreach dir,$(DIRS),$(OUT)/$(dir).o)
 KERNEL_OBJECT = $(OUT)/kernel.o
-ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT)
 TEST_FILES = $(wildcard tests/*.c)
 TEST_OBJECTS = $(patsubst tests/%.c,$(OUT_TESTS)/%.o,$(TEST_FILES))
 LINKER = kernel.ld
@@ -38,7 +37,33 @@ PATCH_GEN = $(OUT)/create_patch
 KERNEL_OLD ?= $(OUT)/kernel.old
 UPDATE_BIN = $(OUT)/update.bin
 
-all: $(OUT) dirs $(KERNEL_OBJECT) $(TARGET)
+# --- Neo Security Subsystem Configuration ---
+NEO_DIR = $(CURDIR)/neo
+NEO_SRC = $(NEO_DIR)/src
+CONFIG_H = $(CURDIR)/include/gen/config.h
+BUNDLE_IMG = $(OUT)/build_bundle.img
+
+# Map active CONFIG selection to Rust bare-metal targets
+ifeq ($(CONFIG),default-riscv)
+RUST_TARGET ?= riscv32imc-unknown-none-elf
+else ifeq ($(CONFIG),default-riscv64)
+RUST_TARGET ?= riscv64gc-unknown-none-elf
+else ifeq ($(CONFIG),default-arm)
+RUST_TARGET ?= armv7a-none-eabi
+else ifeq ($(CONFIG),default-arm64)
+RUST_TARGET ?= aarch64-unknown-none-softfloat
+else ifeq ($(CONFIG),default-x86)
+RUST_TARGET ?= i686-unknown-none
+else ifeq ($(CONFIG),default-x86_64)
+RUST_TARGET ?= x86_64-unknown-none
+else
+RUST_TARGET ?= riscv32imc-unknown-none-elf
+endif
+
+LIBNEO = $(NEO_DIR)/target/$(RUST_TARGET)/release/libneo.a
+ALL_OBJECTS = $(OBJECTS) $(KERNEL_OBJECT) $(LIBNEO)
+
+all: $(OUT) dirs $(KERNEL_OBJECT) $(LIBNEO) $(TARGET)
 
 qemu: CFLAGS += -D__QEMU__
 qemu: all
@@ -64,13 +89,14 @@ x86_64: all
 run: all
 	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic -drive file=disk.img,if=none,format=raw,id=hd0 -global virtio-mmio.force-legacy=false -device virtio-blk-device,drive=hd0
 
-arch64: CFLAGS -= -march=rv32imac_zicsr -mabi=ilp32
+arch64: CFLAGS := $(filter-out -march=rv32imac_zicsr_zifencei -mabi=ilp32,$(CFLAGS)) -march=rv64gc -mabi=lp64d
+arch64: RUST_TARGET = riscv64gc-unknown-none-elf
 arch64: all
 
 NOSHELL_TARGET = $(OUT)/kernel-noshell
 noshell: NOSHELL_DIRS = $(filter-out shell,$(DIRS))
 noshell: CFLAGS += -D__NOSHELL__
-noshell: $(OUT) noshell_dirs $(KERNEL_OBJECT) $(NOSHELL_TARGET)
+noshell: $(OUT) noshell_dirs $(KERNEL_OBJECT) $(LIBNEO) $(NOSHELL_TARGET)
 
 update: all $(PATCH_GEN)
 	@if [ ! -f $(KERNEL_OLD) ]; then \
@@ -81,7 +107,7 @@ update: all $(PATCH_GEN)
 
 DEBUG_TARGET = $(OUT)/kernel-debug
 debug: CFLAGS += -D__DEBUG__
-debug: $(OUT) dirs $(KERNEL_OBJECT) $(DEBUG_TARGET)
+debug: $(OUT) dirs $(KERNEL_OBJECT) $(LIBNEO) $(DEBUG_TARGET)
 
 tests: $(OUT) $(OUT_TESTS) dirs_with_tests $(TARGET_TESTS)
 
@@ -115,14 +141,55 @@ $(GEN_LINKER): $(LINKER) | $(OUT)
 	    -e 's/SECTIONS[[:space:]]*=[[:space:]]*/SECTIONS/g' \
 	    -e 's/\(\.[a-zA-Z0-9_.]\+\)[[:space:]]*=[[:space:]]*{/\1 : {/g' $< > $@
 
-$(TARGET) $(DEBUG_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
-	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(ALL_OBJECTS)
+neo_prebuild:
+	@mkdir -p $(NEO_SRC)
+	@if [ -f "$(CONFIG_H)" ] && grep -q '^[[:space:]]*#define[[:space:]]\+SEED' "$(CONFIG_H)"; then \
+		grep -E '^[[:space:]]*#define[[:space:]]+SEED' "$(CONFIG_H)" | awk -F'"' '{print $$2}' > "$(NEO_SRC)/seed.bin"; \
+	elif [ -f "$(NEO_SRC)/seed.default" ]; then \
+		cp "$(NEO_SRC)/seed.default" "$(NEO_SRC)/seed.bin"; \
+	else \
+		head -c 32 /dev/urandom > "$(NEO_SRC)/seed.bin"; \
+	fi
+	@if [ -f "/creds/key" ]; then \
+		cp "/creds/key" "$(NEO_SRC)/creator.key"; \
+	elif [ -f "$(CURDIR)/creds/key" ]; then \
+		cp "$(CURDIR)/creds/key" "$(NEO_SRC)/creator.key"; \
+	else \
+		head -c 32 /dev/urandom > "$(NEO_SRC)/creator.key"; \
+	fi
+	@head -c 32 /dev/urandom > "$(NEO_SRC)/update.key"
+	@if [ ! -f "$(NEO_SRC)/build.sig" ]; then head -c 32 /dev/zero > "$(NEO_SRC)/build.sig"; fi
+	@if [ ! -f "$(NEO_SRC)/kernel.sig" ]; then head -c 32 /dev/zero > "$(NEO_SRC)/kernel.sig"; fi
+	@if [ ! -f "$(NEO_SRC)/malware-list" ]; then touch "$(NEO_SRC)/malware-list"; fi
 
-$(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(GEN_LINKER)
-	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS)
+$(LIBNEO): neo_prebuild
+	cargo build --manifest-path $(NEO_DIR)/Cargo.toml --release --target $(RUST_TARGET)
+
+$(TARGET) $(DEBUG_TARGET) $(NOSHELL_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
+	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(ALL_OBJECTS)
+	@if command -v $(subst gcc,objcopy,$(CC)) >/dev/null 2>&1; then \
+		$(subst gcc,objcopy,$(CC)) -O binary $@ $@.bin; \
+	elif command -v objcopy >/dev/null 2>&1; then \
+		objcopy -O binary $@ $@.bin; \
+	else \
+		cp $@ $@.bin; \
+	fi
+	@sha256sum $@.bin | awk '{print $$1}' | xxd -r -p > $(NEO_SRC)/kernel.sig
+	@cp $(NEO_SRC)/kernel.sig $(OUT)/kernel.sig
+	@cat $@.bin > $(BUNDLE_IMG)
+	@if [ -f disk.img ]; then cat disk.img >> $(BUNDLE_IMG); fi
+	@sha256sum $(BUNDLE_IMG) | awk '{print $$1}' | xxd -r -p > $(NEO_SRC)/build.sig
+	@cp $(NEO_SRC)/build.sig $(OUT)/build.sig
+	@echo "Signatures computed:"
+	@echo "  Kernel SHA-256: $$(sha256sum $@.bin | awk '{print $$1}')"
+	@echo "  Build  SHA-256: $$(sha256sum $(BUNDLE_IMG) | awk '{print $$1}')"
+
+$(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(LIBNEO) $(GEN_LINKER)
+	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS) $(LIBNEO)
 
 clean:
 	@for dir in $(DIRS_ALL); do $(MAKE) -C $$dir clean OUT=$(OUT); done
+	cargo clean --manifest-path $(NEO_DIR)/Cargo.toml
 	rm -rf $(OUT)
 
-.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64
+.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64 neo_prebuild
