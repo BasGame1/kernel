@@ -465,7 +465,7 @@ pub fn trap_handler(mail: &mut Mail) {
 
 #[no_mangle]
 pub extern "C" fn boot_neo(mailbox_addr: usize, kernel_base: usize, kernel_len: usize, expected_kernel_hash: *const u8) -> ! {
-    let mail = unsafe { &mut *(mailbox_addr as *mut Mail) };
+    let mail = unsafe { core::ptr::read_volatile(&mailbox_addr) }
     let exp_hash = unsafe { core::slice::from_raw_parts(expected_kernel_hash, HASH_LEN) };
     let kernel_slice = unsafe { core::slice::from_raw_parts(kernel_base as *const u8, kernel_len) };
     let mut hasher = Sha256::new();
