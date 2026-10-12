@@ -413,7 +413,7 @@ pub fn trap_handler(mail: &mut Mail) {
             } else {
                 if SEED.is_empty() || CREATOR_KEY.is_empty() {
                    mail.status = STATUS_ERR_AUTH_FAILED;
-                   return;
+                   matched = false;
                 }// if fix by 0 division
                 for i in 0..safe_slice.len() {
                     let seed_byte = SEED[i % SEED.len()];
