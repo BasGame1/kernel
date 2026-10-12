@@ -131,7 +131,7 @@ extern void init_slot_status(void);
 
 extern void boot_neo(void *mailbox_addr,
       uint32_t kernel_base, uint32_t kernel_len, uint32_t expected_kernel_hash);
-enum module_status {
+uint32_t enum module_status {
    "READY" = 0;
    "LOADING";
    "NOT LOADED";
