@@ -4,6 +4,7 @@
 #include "../include/kernel.h"
 #include "../include/userspace.h"
 #include "../include/gid.h"
+#include "../include/ntar.h"
 
 #ifdef __USE_AB__
    #include "../include/ab_update.h"
@@ -15,12 +16,6 @@
       #include "../include/noab_update.h"
    #endif
 #endif
-
-bool start_update(const char *update_file);
-char get_active_slot(void);
-void flip_active_slot(void);
-bool get_slot_status(void);
-void init_slot_status(void);
 
 int apply_patch(uint8_t *base_buf, uint32_t base_size, const uint8_t *patch_buf, uint32_t patch_size) {
    if (patch_size < sizeof(struct patch_header)) {
@@ -86,6 +81,10 @@ bool get_slot_status(void) {
 }// get_slot_status
 
 bool start_update(const char *update_file) {
+   if (ntar_is_active()) {
+      errorn("NTAR live boot: system updates prohibited");
+      return 1;
+   }// if
    char test_byte = 0;
    if (read(update_file, &test_byte, 1, 0) <= 0) {
       errorn("Update file does not exist: Pausing update");
@@ -126,4 +125,3 @@ void create_update_process(void) {
    }// if
    successn("Update process started");
 }// create_update_process
-
