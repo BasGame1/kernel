@@ -37,13 +37,13 @@ PATCH_GEN = $(OUT)/create_patch
 KERNEL_OLD ?= $(OUT)/kernel.old
 UPDATE_BIN = $(OUT)/update.bin
 
-# --- Neo Security Subsystem Configuration ---
+# Neo config
 NEO_DIR = $(CURDIR)/neo
 NEO_SRC = $(NEO_DIR)/src
 CONFIG_H = $(CURDIR)/include/gen/config.h
 BUNDLE_IMG = $(OUT)/build_bundle.img
 
-# Map active CONFIG selection to Rust bare-metal targets
+# map rust targets
 ifeq ($(CONFIG),default-riscv)
 RUST_TARGET ?= riscv32imc-unknown-none-elf
 else ifeq ($(CONFIG),default-riscv64)
