@@ -122,28 +122,32 @@ extern void userspace_init(void);
 extern void create_virtio_process(void);
 extern void create_screen_process(void);
 extern void create_keyboard_process(void);
+extern void create_antartica_process(void);
+extern void init_modules(void);
 
 extern bool start_update(const char *update_file);
 extern char get_active_slot(void);
 extern void flip_active_slot(void);
 extern bool get_slot_status(void);
 extern void init_slot_status(void);
+extern void mark_slot_successful(void);
 
 extern void boot_neo(void *mailbox_addr,
-                     uint32_t kernel_base, uint32_t kernel_len, const uint8_t *expected_kernel_hash);
+                     uintptr_t kernel_base, uintptr_t kernel_len, const uint8_t *expected_kernel_hash);
                      
-uint32_t enum module_status {
-   "READY" = 0;
-   "LOADING";
-   "NOT LOADED";
-   "ERROR";
+enum module_status {
+   MODULE_STATUS_READY = 0,
+   MODULE_STATUS_LOADING,
+   MODULE_STATUS_NOT_LOADED,
+   MODULE_STATUS_ERROR
 };
+
 struct module {
    char *name;
-   char author;
-   char version;
-   char description;
-   uint32_t enum module_status;
+   char *author;
+   char *version;
+   char *description;
+   enum module_status status;
    uint32_t id;
    uint32_t secid; // secure id, generated cryptographically
    bool is_kernel; // check if runs on mmode or umode (always umode with exceptions)
@@ -152,5 +156,17 @@ struct module {
    uint32_t gid;
    uint32_t is_hw_access; // if they need hw access (aka, mapping), only for priv
    bool is_temporal; // unloads with reboot
+};
+
+struct kernel_module {
+   const char *name;
+   uint32_t gid;
+   uint32_t flags;
+   int (*init)(void);
+   void (*exit)(void);
+   void *symbols;
+   size_t symbol_count;
+   bool is_loaded;
+   bool is_userspace_accessible;
 };
 #endif

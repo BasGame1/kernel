@@ -5,6 +5,12 @@
 #ifndef __DRIVERS_H
 #define __DRIVERS_H
 
+struct rtc_time;
+struct usb_hid_kbd_report;
+struct goldfish_event;
+struct nfc_target;
+struct can_frame;
+
 extern void uart_8250_init(uintptr_t base_addr, uint32_t clock_hz, uint32_t baud);
 extern void uart_8250_putc(uintptr_t base_addr, char c);
 extern char uart_8250_getc(uintptr_t base_addr);
