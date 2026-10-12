@@ -24,6 +24,8 @@ _start_x86:
    jmp 1b
 
 .global isr_common_stub
+.global trap_vector
+.set trap_vector, isr_common_stub
 isr_common_stub:
    pusha
    mov %ds, %ax

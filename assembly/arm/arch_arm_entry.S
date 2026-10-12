@@ -12,6 +12,8 @@ _start_arm:
 .section .text
 .align 4
 .global arm_vector_table
+.global trap_vector
+.set trap_vector, arm_vector_table
 arm_vector_table:
    b _start_arm
    b arm_undef_handler

@@ -1,6 +1,8 @@
 .section .text.init
 .global _start64
 .type _start64, @function
+.global _start
+.set _start, _start64
 
 _start64:
    la sp, stack_top_64
@@ -20,6 +22,8 @@ _start64:
 .align 4
 .global trap_vector_64
 .type trap_vector_64, @function
+.global trap_vector
+.set trap_vector, trap_vector_64
 
 trap_vector_64:
    csrrw sp, mscratch, sp
