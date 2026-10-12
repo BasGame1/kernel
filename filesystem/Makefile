@@ -1,5 +1,6 @@
 CC ?= gcc
 CFLAGS ?=
+CFLAGS += -I../include
 
 SRC = $(wildcard *.c)
 OBJECTS = $(SRC:.c=.o)
