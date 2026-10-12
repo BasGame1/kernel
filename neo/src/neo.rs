@@ -379,8 +379,7 @@ pub fn trap_handler(mail: &mut Mail) {
             let digest = hasher.finalize();
             let sig_len = core::cmp::min(mail.signature_len as usize, 64);
             let given_sig = &mail.signature[..sig_len];
-            if constant_time_eq(&digest, &given_sig[..core::cmp::min(32, sig_len)])
-                || constant_time_eq(&digest, &BUILD_SIGNATURE[..core::cmp::min(32, BUILD_SIGNATURE.len())]) {
+            if sig_len >= 32 && constant_time_eq(&digest, &given_sig[..32]) {
                 mail.status = STATUS_SUCCESS;
             } else {
                 mail.status = STATUS_ERR_SIG_MISMATCH;
