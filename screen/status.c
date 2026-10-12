@@ -1,8 +1,6 @@
 #include "../include/userspace.h"
 #include "../include/gid.h"
 
-// Status functions
-
 void debugn(char *reason) {
    char *message = concat("\e[0;93m[DEBUG]\e[0;0m ", reason);
    print(message);
@@ -19,7 +17,13 @@ void fataln(char *reason) {
    char *message = concat("\e[0;91m[ERROR]\e[0;0m ", reason);
    print(message);
    print("\n");
-   // TODO, add exit function 
+   while (1) {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+      asm volatile("hlt");
+#else
+      asm volatile("wfi");
+#endif
+   }// while
 }// fatal
 
 void successn(char *reason) {
@@ -34,9 +38,6 @@ void infon(char *reason) {
    print("\n");
 }// info
 
-
-// Status functions without newline
-
 void debug(char *reason) {
    char *message = concat("\e[0;93m[DEBUG]\e[0;0m ", reason);
    print(message);
@@ -50,7 +51,14 @@ void error(char *reason) {
 void fatal(char *reason) {
    char *message = concat("\e[0;91m[ERROR]\e[0;0m ", reason);
    print(message);
-   // TODO, add exit function 
+   print("\n");
+   while (1) {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+      asm volatile("hlt");
+#else
+      asm volatile("wfi");
+#endif
+   }// while
 }// fatal
 
 void success(char *reason) {
@@ -63,9 +71,6 @@ void info(char *reason) {
    print(message);
 }// info
 
-
-// Print wrapper with newline char
-
 void printn(char *message) {
    char *temporal = concat(message, "\n");
    print_character(temporal);
@@ -75,7 +80,7 @@ void print_service_process(void) {
    while (1) {
       char msg_buf[64];
       uint32_t sender = user_ipc_recv(0, msg_buf);
-      if (sender != (uint32_t)-1) {
+      if (sender != (uint32_t)-1 && sender != 0) {
          uint32_t screen_pid = user_get_pid_by_gid(SCREEN_GID);
          if (screen_pid != (uint32_t)-1) {
             uint32_t reply = 0;
