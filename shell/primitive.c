@@ -125,9 +125,14 @@ void call_ls(int argc, char **argv) {
 
 void call_memcpy(int argc, char **argv) {
    if (argc == 4) {
+      extern int _end;
       uintptr_t dest = (uintptr_t)parse_number(argv[1]);
       uintptr_t src = (uintptr_t)parse_number(argv[2]);
       size_t n = parse_number(argv[3]);
+      if (dest < (uintptr_t)&_end || dest + n < dest) {
+         errorn("memcpy: destination memory protected");
+         return;
+      }
       memcpy((void *)dest, (const void *)src, n);
    } else {
       errorn("memcpy should have 3 args: <dest> <src> <size>");
