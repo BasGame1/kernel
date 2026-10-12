@@ -4,56 +4,68 @@
 #include "../include/kernel.h"
 #include "../include/userspace.h"
 
+#ifdef __USE_ANTARTICA__
+extern long antartica_syscall_dispatch(struct trap_frame *frame);
+#endif
+
 void kcall_analyze(struct trap_frame *frame) {
    frame->mepc += 4;
+
+#ifdef __USE_ANTARTICA__
+   if (frame->a7 < 467) {
+      antartica_syscall_dispatch(frame);
+      return;
+   }// if
+#endif
+
    switch (frame->a7) {
-       case KCALL_YIELD:
-          frame->a0 = 0;
-          break;
-       case KCALL_IPC_SEND:
-          successn("KCALL_IPC_SEND handled in kernel");
-          if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
-             errorn("gid no compatibles, permission denied");
-             frame->a0 = (uint32_t)-1;
-             break;
-          }// if check permission
-          frame->a0 = kcall_ipc_send(frame->a0, (void *)frame->a1);
-          break;
-       case KCALL_IPC_RECV:
-          frame->a0 = kcall_ipc_recv(frame->a0, (void *)frame->a1);
-          break;
-       case KCALL_IPC_CALL:
-          if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
-             errorn("gid no compatibles, permission denied");
-             frame->a0 = (uint32_t)-1;
-             break;
-          }// if check permission
-          frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
-          break;
-       case PKCALL_MAP_DEVICE: {
-          struct process *curr = get_process_by_pid((uint32_t)current_pid);
-          if (!curr) {
-             frame->a0 = (uint32_t)-1;
-             break;
-          }// if check process
-          uint32_t sid = frame->a2;
-          if (!verify_pkcall(curr->gid, sid)) {
-             errorn("pkcall rejected for invalid or incorrect sid");
-             frame->a0 = (uint32_t)-1;
-             break;
-          }// if check pkcall
-          frame->a0 = pkcall_map_device(frame->a0, frame->a1);
-          break;
-       }// case PKCALL_MAP_DEVICE
-       case KCALL_GET_PID_BY_GID:
-          frame->a0 = get_pid_by_gid(frame->a0);
-          break;
-       default:
-          errorn("Unkown kcall");
-          frame->a0 = (uint32_t)-1;
-          break;
+      case KCALL_YIELD:
+         frame->a0 = 0;
+         break;
+      case KCALL_IPC_SEND:
+         successn("KCALL_IPC_SEND handled in kernel");
+         if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
+            errorn("gid no compatibles, permission denied");
+            frame->a0 = (uint32_t)-1;
+            break;
+         }// if check permission
+         frame->a0 = kcall_ipc_send(frame->a0, (void *)frame->a1);
+         break;
+      case KCALL_IPC_RECV:
+         frame->a0 = kcall_ipc_recv(frame->a0, (void *)frame->a1);
+         break;
+      case KCALL_IPC_CALL:
+         if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
+            errorn("gid no compatibles, permission denied");
+            frame->a0 = (uint32_t)-1;
+            break;
+         }// if check permission
+         frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
+         break;
+      case PKCALL_MAP_DEVICE: {
+         struct process *curr = get_process_by_pid((uint32_t)current_pid);
+         if (!curr) {
+            frame->a0 = (uint32_t)-1;
+            break;
+         }// if check process
+         uint32_t sid = frame->a2;
+         if (!verify_pkcall(curr->gid, sid)) {
+            errorn("pkcall rejected for invalid or incorrect sid");
+            frame->a0 = (uint32_t)-1;
+            break;
+         }// if check pkcall
+         frame->a0 = pkcall_map_device(frame->a0, frame->a1);
+         break;
+      }// case PKCALL_MAP_DEVICE
+      case KCALL_GET_PID_BY_GID:
+         frame->a0 = get_pid_by_gid(frame->a0);
+         break;
+      default:
+         errorn("Unkown kcall");
+         frame->a0 = (uint32_t)-1;
+         break;
    }// switch
-}// kcall_analize
+}// kcall_analyze
 
 /* Kernel */
 
