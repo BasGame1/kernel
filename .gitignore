@@ -18,3 +18,4 @@ docs/
 include/gen
 crypto/
 creds/
+security*.md
