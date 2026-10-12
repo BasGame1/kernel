@@ -6,7 +6,13 @@
 #define __KERNEL_H
 
 #define print(message) print_character(message)
+#ifndef set_csrs
+#if defined(__RISCV__) || defined(__riscv)
 #define set_csrs(reg, bit) asm volatile("csrs " #reg ", %0" :: "r"(bit))
+#else
+#define set_csrs(reg, bit) ((void)0)
+#endif
+#endif
 
 uintptr_t mtime;
 uintptr_t mtimemcp;
@@ -56,6 +62,7 @@ extern bool dir_entry_matches(const struct ext2_dir_entry *entry, const char *na
 extern char *concat(char *hardcoded_text, char *reason);
 extern void *memcpy(void *dest, const void *src, size_t n);
 extern int strcmp(const char *s1, const char *s2);
+extern size_t strlen(const char *s);
 extern void *memset(void *dest, int val, size_t len);
 extern size_t parse_number(char *str);
 extern uint32_t round_page(uint32_t number, uint32_t page);
@@ -102,12 +109,6 @@ extern void shutdown();
 extern void kreboot();
 extern void reboot();
 
-/*
-extern uint32_t sys_ipc_send(dest_pid, message_ptr);
-extern uint32_t sys_ipc_recv(src_pid, message_buf);
-extern uint32_t sys_ipc_call(dest_pid, msg, reply);
-extern void sys_map_device(phys_addr, virt_addr);
-*/
 extern void test_call();
 extern void _enteruserspace(uintptr_t user_stack_top);
 
@@ -149,13 +150,13 @@ struct module {
    char *description;
    enum module_status status;
    uint32_t id;
-   uint32_t secid; // secure id, generated cryptographically
-   bool is_kernel; // check if runs on mmode or umode (always umode with exceptions)
-   bool is_priv; // if priviledge, get prividlge apis and gid
-   uint32_t sid; // only if priv status
+   uint32_t secid;
+   bool is_kernel;
+   bool is_priv;
+   uint32_t sid;
    uint32_t gid;
-   uint32_t is_hw_access; // if they need hw access (aka, mapping), only for priv
-   bool is_temporal; // unloads with reboot
+   uint32_t is_hw_access;
+   bool is_temporal;
 };
 
 struct kernel_module {
