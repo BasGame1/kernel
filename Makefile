@@ -122,6 +122,9 @@ $(OUT_TESTS):
 
 dirs: $(OUT)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
+
+$(OBJECTS): dirs
+	@true
 	
 noshell_dirs: $(OUT)
 	@for dir in $(NOSHELL_DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
@@ -184,8 +187,8 @@ $(TARGET) $(DEBUG_TARGET) $(NOSHELL_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
 	@echo "  Kernel SHA-256: $$(sha256sum $@.bin | awk '{print $$1}')"
 	@echo "  Build  SHA-256: $$(sha256sum $(BUNDLE_IMG) | awk '{print $$1}')"
 
-$(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(LIBNEO) $(GEN_LINKER)
-	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS) $(LIBNEO)
+$(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(KERNEL_OBJECT) $(LIBNEO) $(GEN_LINKER)
+	$(CC) $(CFLAGS) -nostdlib -T $(GEN_LINKER) -o $@ $(TEST_OBJECTS) $(OBJECTS) $(KERNEL_OBJECT) $(LIBNEO)
 
 clean:
 	@for dir in $(DIRS_ALL); do $(MAKE) -C $$dir clean OUT=$(OUT); done
