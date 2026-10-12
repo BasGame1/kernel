@@ -130,7 +130,7 @@ int rtl8139_recv_packet(uintptr_t base_io, void *buffer, uint16_t max_len) {
  dst[i] = src[i];
  }// for
 
- rx_offset = (rx_offset + pkt_len + 4 + 3) & ~3;
- rtl_outw(base_io, RTL8139_CAPR, rx_offset - 16);
+ rx_offset = ((rx_offset + pkt_len + 4 + 3) & ~3) % 8192;
+ rtl_outw(base_io, RTL8139_CAPR, (rx_offset >= 16) ? (rx_offset - 16) : (uint16_t)(8192 - (16 - rx_offset)));
  return pkt_len;
 }// rtl8139_recv_packet

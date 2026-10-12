@@ -49,13 +49,13 @@ void drivers_init(void) {
       fb_simple_init(0x70000000, 1280, 720, 1280 * 4);
    #endif
    #ifdef __USE_AUDIO_INTEL_HDA__
-      audio_intel_hda_init(0x80000000);
+      audio_intel_hda_init(0x40005000);
    #endif
    #ifdef __USE_AUDIO_VIRTIO__
       audio_virtio_init(0x10004000);
    #endif
    #ifdef __USE_AUDIO_AC97__
-      audio_ac97_init(0x80001000, 0x80002000);
+      audio_ac97_init(0x40006000, 0x40007000);
    #endif
    #ifdef __USE_SCREEN_GOLDFISH__
       screen_goldfish_init(0x90000000, 0x90100000);
