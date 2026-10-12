@@ -41,6 +41,10 @@ write_header() {
     local value="$2"
     local selected_config_upp="${selected_config^^}"
 
+    if [ "$selected_config_upp" = "CC" ]; then
+        return
+    fi
+
     if [ "$value" = "0" ] || [ "$value" = "n" ]; then
         echo "$selected_config ignored"
     elif [ "$value" = "1" ] || [ "$value" = "y" ]; then
@@ -83,12 +87,41 @@ inspect_file() {
         key="${key%"${key##*[![:space:]]}"}"
         val="${val#"${val%%[![:space:]]*}"}"
         val="${val%"${val##*[![:space:]]}"}"
+        val="${val%%//*}"
+        val="${val%%#*}"
+        val="${val%"${val##*[![:space:]]}"}"
         if [ $key = "RANDOM_SEED" ] &&  [ $val = 0 ]; then
            val=$(generate_seed)
         fi
         write_header "$key" "$val"
         ((i++))
     done < "$CONFIG_FILE"
+
+    local drivers_file=""
+    if [ -f "$CONFIG_DIR/drivers-config" ]; then
+        drivers_file="$CONFIG_DIR/drivers-config"
+    elif [ -f "$ROOT_DIR/drivers-config" ]; then
+        drivers_file="$ROOT_DIR/drivers-config"
+    fi
+
+    if [ -n "$drivers_file" ]; then
+        echo "Reading drivers config: $drivers_file"
+        while IFS= read -r part || [ -n "$part" ]; do
+            if [[ -z "${part// }" ]] || [[ "$part" =~ ^[[:space:]]*# ]]; then
+                continue
+            fi
+            local key="${part%%=*}"
+            local val="${part#*=}"
+            key="${key#"${key%%[![:space:]]*}"}"
+            key="${key%"${key##*[![:space:]]}"}"
+            val="${val#"${val%%[![:space:]]*}"}"
+            val="${val%"${val##*[![:space:]]}"}"
+            val="${val%%//*}"
+            val="${val%%#*}"
+            val="${val%"${val##*[![:space:]]}"}"
+            write_header "$key" "$val"
+        done < "$drivers_file"
+    fi
 
     echo "" >> "$OUT_HEADER"
     echo "#endif" >> "$OUT_HEADER"
