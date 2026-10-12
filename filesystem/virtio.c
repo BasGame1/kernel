@@ -5,6 +5,7 @@
 #include "../include/kernel.h"
 #include "../include/userspace.h"
 #include "../include/gid.h"
+#include "../include/ntar.h"
 
 static uint32_t virtio_base = 0;
 static struct virtq_desc queue_desc[VIRTQ_NUM] __attribute__((aligned(16)));
@@ -16,9 +17,17 @@ static volatile uint8_t disk_status;
 
 /* Wrappers just for commodity */
 int virtio_read_sector(uint64_t sector, void *buffer) {
+   if (ntar_is_active()) {
+      if (ntar_ram_read_sector(sector, buffer) == 0) {
+         return 0;
+      }// if
+   }// if
    return virtio_blk_transfer(sector, buffer, false);
 }
 int virtio_write_sector(uint64_t sector, void *buffer) {
+   if (ntar_is_active()) {
+      return ntar_ram_write_sector(sector, buffer);
+   }// if
    return virtio_blk_transfer(sector, buffer, true);
 }
 
@@ -71,14 +80,14 @@ uint32_t probe_mmio() {
      return 0;
   } else {
      return i;
-  }// if check if error 404 on the block device
+  }// if
 }// probe_mmio
 
 int virtio_blk_transfer(uint64_t sector, void *buffer, bool is_write) {
    if (virtio_base == 0) {
       errorn("virtio disk was not initialized");
       return -1;
-   }// if to check if init virtio
+   }// if
    disk_req.type = is_write ? VIRTIO_BLK_T_OUT : VIRTIO_BLK_T_IN;
    disk_req.reserved = 0;
    disk_req.sector = sector;
