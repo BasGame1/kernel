@@ -83,7 +83,12 @@ trap_vector:
     lw x30, 120(sp)
     lw x31, 124(sp)
     
+    lw x2, 8(sp)
+    bnez x2, 2f
     addi sp, sp, 128
-    csrw mscratch, sp
-    lw sp, -120(sp)
+    mret
+2:
+    addi x1, sp, 128
+    csrw mscratch, x1
+    mv sp, x2
     mret
