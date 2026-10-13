@@ -1,0 +1,20 @@
+# arch config
+
+var arm:
+   default: 0
+   active: 0
+   value: none
+   
+var x86:
+   default: 0
+   active: 0
+   value: none
+
+var riscv:
+   active: 0
+   value: none
+
+var 32bit:
+   depends_on:
+   active: 0
+   value: none
