@@ -4,6 +4,14 @@
 
 #ifdef __USE_AB_NO_REBOOT__
 
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   #define KERNEL_LIVE_HANDOFF_ADDR 0x00200000UL
+#elif defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
+   #define KERNEL_LIVE_HANDOFF_ADDR 0x40200000UL
+#else
+   #define KERNEL_LIVE_HANDOFF_ADDR 0x80200000UL
+#endif
+
 void make_security_copy(void) {
    kmkdir("/boot/seccopy");
    kcp("/boot/kernel", "/boot/seccopy/kernel.bak");
@@ -35,30 +43,28 @@ uint32_t install_update(char active_slot, const char *update_file) {
    int new_sz = apply_patch(base_buf, (uint32_t)base_sz, patch_buf, (uint32_t)patch_sz);
    if (new_sz > 0) {
       write("/boot/kernel", base_buf, (uint32_t)new_sz, 0);
-      memcpy((void *)0x80200000, base_buf, (uint32_t)new_sz);
-      successn("Kernel patched into 0x80200000, handing off CPU");
+      memcpy((void *)KERNEL_LIVE_HANDOFF_ADDR, base_buf, (uint32_t)new_sz);
+      successn("Kernel patched, handing off CPU");
 #if defined(__RISCV__) || defined(__riscv)
       asm volatile("csrci mstatus, 8");
       asm volatile("csrw mie, zero");
       asm volatile("fence.i");
       asm volatile("fence");
-      asm volatile("jr %0" :: "r"(0x80200000));
+      asm volatile("jr %0" :: "r"(KERNEL_LIVE_HANDOFF_ADDR));
 #elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
       asm volatile("cli");
-      asm volatile("jmp *%0" :: "r"(0x80200000));
+      asm volatile("jmp *%0" :: "r"(KERNEL_LIVE_HANDOFF_ADDR));
 #elif defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
       asm volatile("cpsid i");
-      asm volatile("bx %0" :: "r"(0x80200000));
+      asm volatile("bx %0" :: "r"(KERNEL_LIVE_HANDOFF_ADDR));
 #endif
       return 0;
-   }// if
-   else {
+   } else {
       errorn("Update failed, DO NOT REBOOT");
       if (revert_changes() == 0) {
          successn("Changes reverted, everything is fine now, just breathe");
          return 2;
-      }// if
-      else {
+      } else {
          errorn("Changes could not be reverted, say welcome to troubleshoot");
          return 3;
       }// if
@@ -66,4 +72,3 @@ uint32_t install_update(char active_slot, const char *update_file) {
 }// install_update
 
 #endif
-
