@@ -1,13 +1,15 @@
-    . global _start
-    . section .text.init
+    .global _start
+    .section .text.init
 
 _start: 
    la t0, _end
-   la sp, stack_top
-   li t0, 0xFFFFFFFF
+   srli t0, t0, 2
    csrw pmpaddr0, t0
-   li t1, 0x0F
+   li t0, 0xFFFFFFFF
+   csrw pmpaddr1, t0
+   li t1, 0x0F08
    csrw pmpcfg0, t1
+   la sp, stack_top
    call kernel_init
 1:
    wfi
@@ -18,4 +20,3 @@ _start:
     stack_bottom:
         .skip 4096
     stack_top:
-
