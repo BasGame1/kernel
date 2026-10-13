@@ -8,6 +8,10 @@
 #ifndef __ANTARTICA_H
 #define __ANTARTICA_H
 
+#ifdef __unused
+#undef __unused
+#endif
+
 #define LINUX_SYSCALL_COUNT 467
 #define MAX_LINUX_FDS 32
 
