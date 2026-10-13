@@ -7,6 +7,10 @@
 #include "../include/gid.h"
 #include "../include/memory.h"
 
+#ifndef PTE_RW
+   #define PTE_RW 0x06
+#endif
+
 struct process processes[MAX_PROCESSES];
 int current_pid = -1;
 
@@ -21,17 +25,29 @@ bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid) {
       errorn("pid is not in use");
       return false;
    }// if
+#ifndef LINUX_MODULE_GID
+   #define LINUX_MODULE_GID 16
+#endif
+
    if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid) {
-      successn("Receiver and sender are on the same gid or receiver is system");
+      successn("Receiver and sender are on the same gid or system");
       return true;
-   } else if (receiver->gid == SYSTEM_GID || sender->gid == SYSTEM_GID || receiver->gid == sender->gid || receiver->gid == KEYBOARD_GID || (receiver->gid == VIRTIO_GID && sender->gid == FS_GID) || (receiver->gid == FS_GID && sender->gid == UPDATE_PROCESS_GID) || receiver->gid == UPDATE_PROCESS_GID || receiver->gid == ANTARTICA_GID || sender->gid == ANTARTICA_GID) {
-       successn("Interaction is allowed due being an exception");
-       return true;
-    } else {
+   } else if ((receiver->gid == KEYBOARD_GID && sender->gid == SYSTEM_GID) || 
+         (receiver->gid == VIRTIO_GID && sender->gid == FS_GID) || 
+         (receiver->gid == FS_GID && sender->gid == UPDATE_PROCESS_GID) || 
+         (sender->gid == FS_GID && receiver->gid == UPDATE_PROCESS_GID) || 
+         receiver->gid == ANTARTICA_GID || 
+         sender->gid == ANTARTICA_GID || 
+         receiver->gid == LINUX_MODULE_GID || 
+         sender->gid == LINUX_MODULE_GID) {
+      successn("Interaction is allowed due being an authorized exception");
+      return true;
+   } else {
       errorn("Receiver and sender communication blocked due to different gid");
       return false;
    }// if
-}// check_gid_permissions
+   return false;
+}// check_gid_permission
 
 uint32_t get_pid_by_gid(uint32_t gid) {
    for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
@@ -52,10 +68,13 @@ struct process *get_process_by_pid(uint32_t pid) {
 }// get_process_by_pid
 
 struct process *get_process_by_frame(void *frame) {
+   if (!frame) {
+      return NULL;
+   }// if
    for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
       if (processes[i].state != PROCESS_UNUSED && processes[i].frame == (struct trap_frame *)frame) {
          return &processes[i];
-      }//if
+      }// if
    }// for
    return NULL;
 }// get_process_by_frame
@@ -64,7 +83,9 @@ uint32_t get_free_pid(void) {
    static uint32_t next_pid = MIN_PID;
    for (uint32_t i = 0; i < (MAX_PID - MIN_PID); i++) {
       uint32_t candidate = next_pid++;
-      if (next_pid >= MAX_PID) next_pid = MIN_PID;
+      if (next_pid >= MAX_PID) {
+         next_pid = MIN_PID;
+      }// if
       if (get_process_by_pid(candidate) == NULL) {
          return candidate;
       }// if
@@ -96,16 +117,20 @@ uint32_t create_process(void *entry, uint32_t gid) {
    uintptr_t kernel_stack_page = allocate_memory();
    if (!user_stack_page || !kernel_stack_page) {
       errorn("Cant allocate stack pages for new process");
-      if (user_stack_page) free_memory((uintptr_t *)user_stack_page);
-      if (kernel_stack_page) free_memory((uintptr_t *)kernel_stack_page);
+      if (user_stack_page) {
+         free_memory((uintptr_t *)user_stack_page);
+      }// if
+      if (kernel_stack_page) {
+         free_memory((uintptr_t *)kernel_stack_page);
+      }// if
       return (uint32_t)-1;
    }// if
    uintptr_t user_stack = user_stack_page + 4096;
    uintptr_t kernel_stack = kernel_stack_page + 4096;
    extern uintptr_t *root_directory;
    if (root_directory) {
-      map_virtual_memory(root_directory, user_stack_page, user_stack_page, (PTE_RWX | PTE_U));
-   }
+      map_virtual_memory(root_directory, user_stack_page, user_stack_page, (PTE_RW | PTE_U));
+   }// if
    struct trap_frame *frame = (struct trap_frame *)(kernel_stack - sizeof(struct trap_frame));
    memset(frame, 0, sizeof(struct trap_frame));
    frame->mepc = (uintptr_t)entry;
