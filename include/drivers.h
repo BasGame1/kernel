@@ -103,6 +103,7 @@ extern bool gpu_msm_adreno_is_active(void);
 extern int serial_qcom_geni_init(uintptr_t mmio_base, uint32_t baud);
 extern void serial_qcom_geni_putc(char c);
 extern char serial_qcom_geni_getc(void);
+extern int soc_qcom_smd_init(uintptr_t mmio_base);
 extern void init_overlayfs(void);
 extern int overlayfs_mount(const char *lowerdir, const char *upperdir, const char *workdir);
 extern bool overlayfs_is_mounted(void);
