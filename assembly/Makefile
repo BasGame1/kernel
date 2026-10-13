@@ -19,7 +19,7 @@ COMBINED_OBJECTS = $(OUT)/$(notdir $(CURDIR)).o
 all: $(COMBINED_OBJECTS)
 
 boot.o: $(BOOT_SRC)
-	sed -e 's/\.[[:space:]]\+/./g' $< | $(CC) $(CFLAGS) -c -x assembler - -o $@
+	sed -e 's/\.[[:space:]]\+/./g' $< | $(CC) $(CFLAGS) -c -x assembler-with-cpp - -o $@
 
 trap.o: trap.S
 	$(CC) $(CFLAGS) -c $< -o $@
