@@ -61,10 +61,10 @@ void ktouch(char *path) {
    ext2_create_file(path);
 }// ktouch
 
-void ls(char *path) {
+void kls(char *path) {
    if (path && *path) {
       ext2_list_dir(path);
    } else {
       ext2_list_dir("/");
    }// if
-}// ls
+}// kls
