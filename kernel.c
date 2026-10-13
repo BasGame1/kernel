@@ -6,6 +6,11 @@
 #include "include/shell.h"
 #include "include/userspace.h"
 
+uintptr_t mtime = 0;
+uintptr_t mtimemcp = 0;
+handler_t interrupt_handlers[16];
+handler_t exception_handlers[16];
+
 extern void kernel_init() {
    start_screen();
    successn("Kernel Starting");
@@ -23,7 +28,7 @@ extern void kernel_init() {
    successn("Virtual Memory Started");
    
    infon("Starting Trap Handlers");
-   for(uint32_t i = 0; i < 16; i++) {
+   for (uint32_t i = 0; i < 16; i++) {
       interrupt_handlers[i] = unknown_error;
       exception_handlers[i] = unknown_error;
    }// for jump table
@@ -115,6 +120,11 @@ extern void kernel_init() {
 }// kernel_init
 
 extern struct trap_frame *trap_handler(struct trap_frame *frame) {
+   if (!frame) {
+      fataln("trap_handler received NULL frame");
+      return frame;
+   }// if
+
 #if defined(__RISCV__) || defined(__riscv)
    uintptr_t cause;
    asm volatile("csrr %0, mcause" : "=r" (cause));
@@ -127,17 +137,25 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
 
    if (trap_reason > 15) {
       fataln("trap reason is bigger than 15");
-      return frame;
+      return schedule(frame);
    }// if
    
    if (is_hardware) {
-      interrupt_handlers[trap_reason]();
+      if (interrupt_handlers[trap_reason]) {
+         interrupt_handlers[trap_reason]();
+      } else {
+         unknown_error();
+      }// if
    } else {
       if (trap_reason == 8 || trap_reason == 9 || trap_reason == 11) {
          kcall_analyze(frame);
          return schedule(frame);
       } else {
-         exception_handlers[trap_reason]();
+         if (exception_handlers[trap_reason]) {
+            exception_handlers[trap_reason]();
+         } else {
+            unknown_error();
+         }// if
       }// if trap reason
    }// if hardware
    return schedule(frame);
