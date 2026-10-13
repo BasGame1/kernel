@@ -5,6 +5,7 @@
 #include "../include/kernel.h"
 #include "../include/keyboard.h"
 #include "../include/shell.h"
+#include "../include/memory.h"
 
 static int split_command(char *line, char **argv, int max_args) {
    int argc = 0;
@@ -12,15 +13,15 @@ static int split_command(char *line, char **argv, int max_args) {
       while (*line == ' ' || *line == '\t' || *line == '\n' || *line == '\r') {
          *line = '\0';
          line++;
-      }
+      }// while
       if (*line == '\0') {
          break;
-      }
+      }// if
       argv[argc++] = line;
       while (*line && *line != ' ' && *line != '\t' && *line != '\n' && *line != '\r') {
          line++;
-      }
-   }
+      }// while
+   }// while
    return argc;
 }// split_command
 
@@ -29,9 +30,8 @@ int check_command(char *full_command) {
    int argc = split_command(full_command, argv, 16);
    if (argc == 0) {
       return 0;
-   }
+   }// if
    char *command = argv[0];
-   // Bad code, ik, but atm idk any other easy and quick alternative to this monster
    if (strcmp(command, "neo") == 0) {
       call_neo(argc, argv);
    } else if (strcmp(command, "help") == 0) {
@@ -58,7 +58,7 @@ int check_command(char *full_command) {
       return 1;
    } else {
       call_error(command);
-   }
+   }// if
    return 0;
 }// check_command
 
@@ -68,8 +68,8 @@ void wait_command(void) {
       char *full_command = get_input();
       if (check_command(full_command)) {
          break;
-      }
-   }
+      }// if
+   }// while
 }// wait_command
 
 void init_shell(void) {
@@ -120,8 +120,8 @@ void call_ls(int argc, char **argv) {
       ls(argv[1]);
    } else {
       ls("/");
-   }
-}
+   }// if
+}// call_ls
 
 void call_memcpy(int argc, char **argv) {
    if (argc == 4) {
@@ -129,12 +129,16 @@ void call_memcpy(int argc, char **argv) {
       uintptr_t dest = (uintptr_t)parse_number(argv[1]);
       uintptr_t src = (uintptr_t)parse_number(argv[2]);
       size_t n = parse_number(argv[3]);
-      if (dest < (uintptr_t)&_end || dest + n < dest) {
+      if (dest < (uintptr_t)&_end || dest + n < dest || dest + n > END_MEMORY) {
          errorn("memcpy: destination memory protected");
          return;
-      }
+      }// if
+      if (src < (uintptr_t)&_end || src + n < src || src + n > END_MEMORY) {
+         errorn("memcpy: source memory protected");
+         return;
+      }// if
       memcpy((void *)dest, (const void *)src, n);
    } else {
       errorn("memcpy should have 3 args: <dest> <src> <size>");
-   }
-}
+   }// if
+}// call_memcpy
