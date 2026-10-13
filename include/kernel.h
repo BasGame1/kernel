@@ -14,11 +14,11 @@
 #endif
 #endif
 
-uintptr_t mtime;
-uintptr_t mtimemcp;
+extern uintptr_t mtime;
+extern uintptr_t mtimemcp;
 typedef void (*handler_t)(void);
-handler_t interrupt_handlers[16];
-handler_t exception_handlers[16];
+extern handler_t interrupt_handlers[16];
+extern handler_t exception_handlers[16];
 
 extern void trap_vector();
 struct trap_frame;
@@ -113,7 +113,6 @@ extern void test_call();
 extern void _enteruserspace(uintptr_t user_stack_top);
 
 extern void divide_memory(uintptr_t start, uintptr_t end);
-extern void free_memory(uintptr_t *current_full_page);
 extern uintptr_t allocate_memory();
 extern void free_memory(uintptr_t *current_full_page);
 
