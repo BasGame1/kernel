@@ -15,7 +15,7 @@ vm/
 *.log
 #Ignore docs/ for now
 include/gen
-configs/gen
+config/gen
 crypto/
 creds/
 security*.md
