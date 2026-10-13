@@ -1,0 +1,31 @@
+# FS config
+
+var use_ext2:
+   depends_on: use_virtio
+   active: 0
+   value: none
+   
+var use_ext4:
+   depends_on: none
+   active: 0
+   value: none
+
+var use_btfs:
+   depends_on: none
+   active: 0
+   value: none
+
+var use_ntfs:
+   depends_on: none
+   active: 0
+   value: none
+
+var use_vfat:
+   depends_on: none
+   active: 0
+   value: none
+
+var use_virtio:
+   depends_on: none
+   active: 0
+   value: none
