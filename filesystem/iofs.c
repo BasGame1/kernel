@@ -46,6 +46,12 @@ int kcp(const char *origin, const char *destiny) {
 }// cp
 
 void kmv(char *origin, char *destiny) {
+   if (!origin || !destiny) {
+      return;
+   }// if
+   if (strcmp(origin, destiny) == 0) {
+      return;
+   }// if
    if (kcp(origin, destiny) == 0) {
       remove(origin);
    }// if
@@ -53,5 +59,12 @@ void kmv(char *origin, char *destiny) {
 
 void ktouch(char *path) {
    ext2_create_file(path);
-}// path
+}// ktouch
 
+void ls(char *path) {
+   if (path && *path) {
+      ext2_list_dir(path);
+   } else {
+      ext2_list_dir("/");
+   }// if
+}// ls
