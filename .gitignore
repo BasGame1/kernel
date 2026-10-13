@@ -14,8 +14,8 @@ vm/
 *.img
 *.log
 #Ignore docs/ for now
-docs/
 include/gen
+configs/gen
 crypto/
 creds/
 security*.md
