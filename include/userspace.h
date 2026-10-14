@@ -18,7 +18,18 @@
 #define KCALL_IPC_CALL 3
 #define PKCALL_MAP_DEVICE 10
 #define KCALL_GET_PID_BY_GID 4
-    
+#define PID_SLOT_RANGE (MAX_PID - MIN_PID)
+#define PID_SLOT_UNUSED 0xFF
+
+extern uint8_t pid_to_slot[PID_SLOT_RANGE];
+struct gid_cache_entry {
+   uint32_t gid;
+   uint32_t pid;
+   bool valid;
+};
+extern struct gid_cache_entry gid_cache;
+extern int current_process_idx;
+
 extern uint32_t ext2_mkdir(const char *path);
 
 extern uint32_t get_pid_by_gid(uint32_t gid);
@@ -158,10 +169,22 @@ extern uint32_t get_free_pid(void);
 extern struct process *get_process_by_pid(uint32_t pid);
 extern struct process *get_process_by_frame(void *frame);
 extern struct trap_frame *schedule(struct trap_frame *current_frame);
-
+extern static inline void invalidate_gid_cache(void)
 extern uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr);
 extern uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf);
 extern uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply);
 extern uint32_t user_yield(void);
+extern int direct_handoff_idx;
+static inline void copy_ipc_msg_64(void *dest, const void *src) {
+   if ((((uintptr_t)dest | (uintptr_t)src) & (sizeof(uint32_t) - 1)) == 0) {
+      uint32_t *d = (uint32_t *)dest;
+      const uint32_t *s = (const uint32_t *)src;
+      for (size_t i = 0; i < 16; i++) {
+         d[i] = s[i];
+      }
+   } else {
+      memcpy(dest, src, 64);
+   }
+}
 
 #endif
