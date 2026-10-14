@@ -118,9 +118,8 @@ extern void kernel_init() {
    userspace_init();
    
 }// kernel_init
-
 extern struct trap_frame *trap_handler(struct trap_frame *frame) {
-   if (!frame) {
+   if (__builtin_expect(!frame, 0)) {
       fataln("trap_handler received NULL frame");
       return frame;
    }// if
@@ -135,28 +134,31 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
    uint32_t trap_reason = 8;
 #endif
 
-   if (trap_reason > 15) {
+   if (__builtin_expect(trap_reason > 15, 0)) {
       fataln("trap reason is bigger than 15");
       return schedule(frame);
    }// if
    
-   if (is_hardware) {
-      if (interrupt_handlers[trap_reason]) {
-         interrupt_handlers[trap_reason]();
+   if (!is_hardware) {
+      if (__builtin_expect(trap_reason == 8 || trap_reason == 9 || trap_reason == 11, 1)) {
+         kcall_analyze(frame);
+         return schedule(frame);
+      }
+      if (exception_handlers[trap_reason]) {
+         exception_handlers[trap_reason]();
       } else {
          unknown_error();
       }// if
    } else {
-      if (trap_reason == 8 || trap_reason == 9 || trap_reason == 11) {
-         kcall_analyze(frame);
-         return schedule(frame);
+      if (__builtin_expect(trap_reason == 7, 1)) {
+         handle_clock_error();
       } else {
-         if (exception_handlers[trap_reason]) {
-            exception_handlers[trap_reason]();
+         if (interrupt_handlers[trap_reason]) {
+            interrupt_handlers[trap_reason]();
          } else {
             unknown_error();
          }// if
-      }// if trap reason
+      }
    }// if hardware
    return schedule(frame);
 }// trap_handler
