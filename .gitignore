@@ -26,3 +26,6 @@ neo/src/*.key
 neo/src/*.sig
 security*
 hypervisor/
+config/archlinux-x86_64
+new*
+kvm/
