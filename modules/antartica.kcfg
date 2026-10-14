@@ -1,0 +1,21 @@
+# modules config
+
+var use_linux_modules:
+   active: 0
+   value: none
+   
+var load_virtio_as_module:
+   active: 0
+   value: none
+   
+var load_keyboard_as_module:
+   active: 0
+   value: none
+   
+var load_screen_as_module:
+   active: 0
+   value: none
+   
+var load_print_as_module:
+   active: 0
+   value: none
