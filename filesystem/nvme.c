@@ -87,7 +87,17 @@ static bool nvme_initialized = false;
 static volatile bool nvme_locked = false;
 
 static inline void nvme_barrier(void) {
-   asm volatile("fence iorw,iorw" ::: "memory");
+   #ifdef __X86__
+      asm volatile("mfence" ::: "memory");
+   #else
+      #ifdef __RISCV__
+         asm volatile("fence iorw,iorw" ::: "memory");
+      #else
+         #ifdef __ARM__
+            asm volatile("dmb sy" ::: "memory");
+         #endif
+      #endif
+   #endif
 }// nvme_barrier
 
 static inline void nvme_write32(uintptr_t base, uint32_t reg, uint32_t val) {
