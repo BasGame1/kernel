@@ -5,21 +5,21 @@
 #include "../include/gid.h"
 
 void print_character(char *message) {
-   if (!message) {
+   if (__builtin_expect(!message, 0)) {
       return;
    }// if
    volatile uint8_t *uart_status_pointer = (volatile uint8_t *)UART_STATUS;
    volatile uint8_t *screen_address_pointer = (volatile uint8_t *)SCREEN_ADDRESS;
-   uint32_t i = 0;
-   while (message[i] != '\0') {
+   const char *p = message;
+   while (*p != '\0') {
       while ((*uart_status_pointer & 0x20) == 0) {
       }// while
-      if ((message[i] == '\010') || (message[i] == '\177')) {
+      char ch = *p++;
+      if (__builtin_expect(ch == '\010' || ch == '\177', 0)) {
          *screen_address_pointer = (char)'\010';
       } else {
-         *screen_address_pointer = message[i];
+         *screen_address_pointer = ch;
       }// if
-      i++;
    }// while
 }// print_character
 
@@ -28,13 +28,14 @@ void clear_screen() {
 }// clear_screen
 
 void screen_driver_process() {
+   static char ack_buf[64] = {0};
    while (1) {
       char msg_buf[64];
       uint32_t sender = user_ipc_recv(0, msg_buf);
       if (sender != (uint32_t)-1) {
          msg_buf[sizeof(msg_buf) - 1] = '\0';
          print_character(msg_buf);
-         user_ipc_send(sender, (void *)0);
+         user_ipc_send(sender, ack_buf);
       }// if
    }// while
 }// screen_driver_process

@@ -17,6 +17,29 @@ uintptr_t *actual_page;
 static uintptr_t mem_start_bound = 0;
 static uintptr_t mem_end_bound = 0;
 
+#define MAX_PAGES ((END_MEMORY - START_MEMORY) / PAGE)
+#define BITMAP_WORDS ((MAX_PAGES + 31) / 32)
+static uint32_t alloc_bitmap[BITMAP_WORDS];
+
+static inline uint32_t page_to_index(uintptr_t addr) {
+   return (uint32_t)((addr - START_MEMORY) / PAGE);
+}
+
+static inline bool bitmap_is_allocated(uintptr_t addr) {
+   uint32_t idx = page_to_index(addr);
+   return (alloc_bitmap[idx / 32] & (1U << (idx % 32))) != 0;
+}
+
+static inline void bitmap_mark_allocated(uintptr_t addr) {
+   uint32_t idx = page_to_index(addr);
+   alloc_bitmap[idx / 32] |= (1U << (idx % 32));
+}
+
+static inline void bitmap_mark_free(uintptr_t addr) {
+   uint32_t idx = page_to_index(addr);
+   alloc_bitmap[idx / 32] &= ~(1U << (idx % 32));
+}
+
 #ifdef __QEMU__
 uintptr_t get_end_of_memory() {
    infon("QEMU: Memory value hardcoded");
@@ -48,6 +71,10 @@ void divide_memory(uintptr_t start, uintptr_t end) {
    mem_start_bound = start;
    mem_end_bound = end;
    head = 0;
+   for (uint32_t i = 0; i < BITMAP_WORDS; i++) {
+      alloc_bitmap[i] = 0;
+   }// for
+
    current_block = start;
    while (current_block + PAGE <= end) {
       uintptr_t *current_page = (uintptr_t *)current_block;
@@ -59,47 +86,45 @@ void divide_memory(uintptr_t start, uintptr_t end) {
 }// divide_memory
 
 void free_memory(uintptr_t *current_full_page) {
-   if (!current_full_page) {
+   if (__builtin_expect(!current_full_page, 0)) {
       errorn("free_memory: NULL pointer passed");
       return;
    }// if
    uintptr_t addr = (uintptr_t)current_full_page;
-   if ((addr & (PAGE - 1)) != 0) {
+   if (__builtin_expect((addr & (PAGE - 1)) != 0, 0)) {
       errorn("free_memory: unaligned page pointer rejected");
       return;
    }// if
-   if (addr < mem_start_bound || addr >= mem_end_bound) {
+   if (__builtin_expect(addr < mem_start_bound || addr >= mem_end_bound, 0)) {
       errorn("free_memory: out of bounds pointer rejected");
       return;
    }// if
+   if (__builtin_expect(!bitmap_is_allocated(addr), 0)) {
+      errorn("free_memory: double free attempt detected");
+      return;
+   }// if
 
-   uintptr_t *curr = head;
-   while (curr) {
-      if (curr == current_full_page) {
-         errorn("free_memory: double free attempt detected");
-         return;
-      }// if
-      curr = (uintptr_t *)(*curr);
-   }// while
-
+   bitmap_mark_free(addr);
    *current_full_page = (uintptr_t)head;
    head = current_full_page;
-   successn("Freeing memory was successful");
 }// free_memory
 
 uintptr_t allocate_memory() {
-   if (head == 0) {
+   if (__builtin_expect(head == 0, 0)) {
       errorn("Out of Memory");
       return 0;
    }// if
    uintptr_t free_page = (uintptr_t)head;
-   if (free_page < mem_start_bound || free_page >= mem_end_bound || (free_page & (PAGE - 1)) != 0) {
+   if (__builtin_expect(free_page < mem_start_bound || free_page >= mem_end_bound || (free_page & (PAGE - 1)) != 0, 0)) {
       errorn("allocate_memory: free list corruption detected");
       head = 0;
       return 0;
    }// if
    uintptr_t *next_free_page = head;
    head = (uintptr_t *)(*next_free_page);
+
+   bitmap_mark_allocated(free_page);
+
    memset((void *)free_page, 0, PAGE);
    return free_page;
 }// allocate_memory
