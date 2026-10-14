@@ -13,8 +13,22 @@ extern long antartica_syscall_dispatch(struct trap_frame *frame);
 
 #define IPC_SAFE_MSG_SIZE 64
 
+static inline bool is_valid_user_buf(const void *ptr, size_t size) {
+   if (__builtin_expect(!ptr, 0)) {
+      return false;
+   }// if
+   uintptr_t addr = (uintptr_t)ptr;
+   if (__builtin_expect(addr >= START_MEMORY && addr < END_MEMORY, 0)) {
+      return false;
+   }// if
+   if (__builtin_expect(addr + size < addr, 0)) {
+      return false;
+   }// if
+   return true;
+}// is_valid_user_buf
+
 void kcall_analyze(struct trap_frame *frame) {
-   if (!frame) {
+   if (__builtin_expect(!frame, 0)) {
       return;
    }// if
    frame->mepc += 4;
@@ -26,32 +40,37 @@ void kcall_analyze(struct trap_frame *frame) {
       return;
    }// if
 #endif
+   uint32_t kcall_num = (uint32_t)frame->a7;
+   if (kcall_num == KCALL_IPC_CALL) {
+      if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
+         errorn("gid not compatible, permission denied");
+         frame->a0 = (uint32_t)-1;
+         return;
+      }// if check permission
+      frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
+      return;
+   }
+   if (kcall_num == KCALL_IPC_SEND) {
+      if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
+         errorn("gid not compatible, permission denied");
+         frame->a0 = (uint32_t)-1;
+         return;
+      }// if check permission
+      frame->a0 = kcall_ipc_send(frame->a0, (void *)frame->a1);
+      return;
+   }
+   if (kcall_num == KCALL_IPC_RECV) {
+      frame->a0 = kcall_ipc_recv(frame->a0, (void *)frame->a1);
+      return;
+   }
+   if (kcall_num == KCALL_YIELD) {
+      frame->a0 = 0;
+      return;
+   }
 
-   switch (frame->a7) {
-      case KCALL_YIELD:
-         frame->a0 = 0;
-         break;
-      case KCALL_IPC_SEND:
-         if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
-            errorn("gid not compatible, permission denied");
-            frame->a0 = (uint32_t)-1;
-            break;
-         }// if check permission
-         frame->a0 = kcall_ipc_send(frame->a0, (void *)frame->a1);
-         break;
-      case KCALL_IPC_RECV:
-         frame->a0 = kcall_ipc_recv(frame->a0, (void *)frame->a1);
-         break;
-      case KCALL_IPC_CALL:
-         if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
-            errorn("gid not compatible, permission denied");
-            frame->a0 = (uint32_t)-1;
-            break;
-         }// if check permission
-         frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
-         break;
+   switch (kcall_num) {
       case PKCALL_MAP_DEVICE: {
-         struct process *curr = get_process_by_pid((uint32_t)current_pid);
+         struct process *curr = get_process_by_pid_fast((uint32_t)current_pid);
          if (!curr) {
             frame->a0 = (uint32_t)-1;
             break;
@@ -75,35 +94,24 @@ void kcall_analyze(struct trap_frame *frame) {
    }// switch
 }// kcall_analyze
 
-static bool is_valid_user_buf(const void *ptr, size_t size) {
-   if (!ptr) {
-      return false;
-   }// if
-   uintptr_t addr = (uintptr_t)ptr;
-   if (addr >= START_MEMORY && addr < END_MEMORY) {
-      return false;
-   }// if
-   if (addr + size < addr) {
-      return false;
-   }// if
-   return true;
-}// is_valid_user_buf
-
 uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr) {
-   struct process *curr = get_process_by_pid((uint32_t)current_pid);
-   struct process *dest = get_process_by_pid(dest_pid);
-   if (!dest || !curr || !is_valid_user_buf(message_ptr, IPC_SAFE_MSG_SIZE)) {
+   struct process *curr = get_process_by_pid_fast((uint32_t)current_pid);
+   struct process *dest = get_process_by_pid_fast(dest_pid);
+   if (__builtin_expect(!dest || !curr || !is_valid_user_buf(message_ptr, IPC_SAFE_MSG_SIZE), 0)) {
       return (uint32_t)-1;
    }// if
 
    if (dest->state == PROCESS_BLOCKED_RECV) {
       if (dest->ipc_msg_buf && message_ptr) {
-         memcpy(dest->ipc_msg_buf, message_ptr, IPC_SAFE_MSG_SIZE);
+         copy_ipc_msg_64(dest->ipc_msg_buf, message_ptr);
       }// if
       dest->state = PROCESS_READY;
       if (dest->frame) {
          dest->frame->a0 = (uint32_t)current_pid;
       }// if
+      if (dest_pid >= MIN_PID && dest_pid < MAX_PID) {
+         direct_handoff_idx = (int)pid_to_slot[dest_pid - MIN_PID];
+      }
       return 0;
    } else {
       curr->state = PROCESS_BLOCKED_SEND;
@@ -114,25 +122,37 @@ uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr) {
 }// kcall_ipc_send
 
 uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf) {
-   struct process *curr = get_process_by_pid((uint32_t)current_pid);
-   if (!curr || !is_valid_user_buf(message_buf, IPC_SAFE_MSG_SIZE)) {
+   struct process *curr = get_process_by_pid_fast((uint32_t)current_pid);
+   if (__builtin_expect(!curr || !is_valid_user_buf(message_buf, IPC_SAFE_MSG_SIZE), 0)) {
       return (uint32_t)-1;
    }// if
 
-   for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
-      if (processes[i].state == PROCESS_BLOCKED_SEND && processes[i].ipc_target_pid == curr->pid) {
-         if (src_pid == 0 || processes[i].pid == src_pid) {
+   if (src_pid != 0) {
+      struct process *sender = get_process_by_pid_fast(src_pid);
+      if (sender && sender->state == PROCESS_BLOCKED_SEND && sender->ipc_target_pid == curr->pid) {
+         if (message_buf && sender->ipc_msg_buf) {
+            copy_ipc_msg_64(message_buf, sender->ipc_msg_buf);
+         }// if
+         sender->state = PROCESS_READY;
+         if (sender->frame) {
+            sender->frame->a0 = 0;
+         }// if
+         return sender->pid;
+      }// if match
+   } else {
+      for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
+         if (processes[i].state == PROCESS_BLOCKED_SEND && processes[i].ipc_target_pid == curr->pid) {
             if (message_buf && processes[i].ipc_msg_buf) {
-               memcpy(message_buf, processes[i].ipc_msg_buf, IPC_SAFE_MSG_SIZE);
+               copy_ipc_msg_64(message_buf, processes[i].ipc_msg_buf);
             }// if
             processes[i].state = PROCESS_READY;
             if (processes[i].frame) {
                processes[i].frame->a0 = 0;
             }// if
             return processes[i].pid;
-         }// if match
-      }// if blocked sender
-   }// for
+         }// if blocked sender
+      }// for
+   }// if
 
    curr->state = PROCESS_BLOCKED_RECV;
    curr->ipc_msg_buf = message_buf;
@@ -140,12 +160,36 @@ uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf) {
 }// kcall_ipc_recv
 
 uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
-   kcall_ipc_send(dest_pid, msg);
-   struct process *curr = get_process_by_pid((uint32_t)current_pid);
-   if (curr) {
-      curr->state = PROCESS_BLOCKED_RECV;
-      curr->ipc_msg_buf = reply;
+   struct process *curr = get_process_by_pid_fast((uint32_t)current_pid);
+   struct process *dest = get_process_by_pid_fast(dest_pid);
+   if (__builtin_expect(!curr || !dest, 0)) {
+      return (uint32_t)-1;
    }// if
+   if (__builtin_expect(!is_valid_user_buf(msg, IPC_SAFE_MSG_SIZE), 0)) {
+      return (uint32_t)-1;
+   }// if
+   if (__builtin_expect(reply && !is_valid_user_buf(reply, IPC_SAFE_MSG_SIZE), 0)) {
+      return (uint32_t)-1;
+   }// if
+
+   /* Send phase */
+   if (dest->state == PROCESS_BLOCKED_RECV) {
+      if (dest->ipc_msg_buf && msg) {
+         copy_ipc_msg_64(dest->ipc_msg_buf, msg);
+      }
+      dest->state = PROCESS_READY;
+      if (dest->frame) {
+         dest->frame->a0 = (uint32_t)current_pid;
+      }
+      /* OPTIMIZATION: Prioritize server execution immediately */
+      if (dest_pid >= MIN_PID && dest_pid < MAX_PID) {
+         direct_handoff_idx = (int)pid_to_slot[dest_pid - MIN_PID];
+      }// if
+   } else {
+      kcall_ipc_send(dest_pid, msg);
+   }// if
+   curr->state = PROCESS_BLOCKED_RECV;
+   curr->ipc_msg_buf = reply;
    return 0;
 }// kcall_ipc_call
 
