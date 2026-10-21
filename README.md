@@ -1,7 +1,9 @@
 ![Platform](https://img.shields.io/badge/Linux-grey?logo=linux)
 ![Static Badge](https://img.shields.io/badge/Bash-grey?logo=GNU%20Bash)
 ![Static Badge](https://badgen.net/badge/icon/Language?icon=C&label)
-![Static Badge](https://badgen.net/badge/icon/BashScript?icon=GNU%20Bash&label)
+
+> [!WARNING]
+> Readme still on todo
 
 # Lyncex Kernel
 ## Written in C, Lyncex is a kernel focused on security and stupid features
