@@ -32,7 +32,6 @@ static volatile uint8_t s_svc_lock = 0;
 
 static void svc_lock_acquire(void) {
    while (__atomic_test_and_set(&s_svc_lock, __ATOMIC_ACQUIRE)) {
-     // wait
    }// while
 }// svc_lock_acquire
 
@@ -55,10 +54,10 @@ static void init_fast_dispatch(void) {
    g_linux_fast_dispatch.free_irq = (void (*)(uint32_t, void *))linux_kmi_lookup_symbol("free_irq");
 
    if (!g_linux_fast_dispatch.kmalloc || !g_linux_fast_dispatch.kzalloc ||
-       !g_linux_fast_dispatch.kfree || !g_linux_fast_dispatch.printk ||
-       !g_linux_fast_dispatch.ioremap || !g_linux_fast_dispatch.iounmap ||
-       !g_linux_fast_dispatch.spin_lock || !g_linux_fast_dispatch.spin_unlock ||
-       !g_linux_fast_dispatch.request_irq || !g_linux_fast_dispatch.free_irq) {
+      !g_linux_fast_dispatch.kfree || !g_linux_fast_dispatch.printk ||
+      !g_linux_fast_dispatch.ioremap || !g_linux_fast_dispatch.iounmap ||
+      !g_linux_fast_dispatch.spin_lock || !g_linux_fast_dispatch.spin_unlock ||
+      !g_linux_fast_dispatch.request_irq || !g_linux_fast_dispatch.free_irq) {
       errorn("linux_svc: one or more KMI fast dispatch symbols could not be resolved");
    }// if
 }// init_fast_dispatch
@@ -156,7 +155,7 @@ void linux_module_service_main(void) {
       memset(&req, 0, sizeof(req));
       memset(&resp, 0, sizeof(resp));
 
-      uint32_t ret = sys_ipc_recv(0, &req);
+      uint32_t ret = user_ipc_recv(0, &req);
       if (ret == (uint32_t)-1) {
          test_call();
          continue;
@@ -167,7 +166,7 @@ void linux_module_service_main(void) {
       switch (req.cmd) {
          case LINUX_MOD_CMD_LOAD:
             if (!req.data_ptr || req.data_len == 0 || req.data_len > 16 * 1024 * 1024 ||
-                (uintptr_t)req.data_ptr + req.data_len < (uintptr_t)req.data_ptr) {
+               (uintptr_t)req.data_ptr + req.data_len < (uintptr_t)req.data_ptr) {
                resp.status = -1;
                errorn("linux_svc: invalid payload parameters for IPC LOAD");
             } else {
@@ -197,7 +196,7 @@ void linux_module_service_main(void) {
             break;
       }// switch
 
-      sys_ipc_send(ret, &resp);
+      user_ipc_send(ret, &resp);
    }// while
 }// linux_module_service_main
 

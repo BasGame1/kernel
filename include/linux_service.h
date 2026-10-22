@@ -19,7 +19,7 @@ struct linux_mod_ipc_req {
    uint32_t cmd;
    const void *data_ptr;
    size_t data_len;
-   char name[64];
+   char name[40];
 };
 
 struct linux_mod_ipc_resp {
