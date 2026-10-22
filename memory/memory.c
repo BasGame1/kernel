@@ -4,6 +4,10 @@
 #include "../include/memory.h"
 #include "../include/kernel.h"
 
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+#include "../include/arch_x86.h"
+#endif
+
 extern uint32_t round_page(uint32_t number, uint32_t page);
 extern void fatal(char *reason);
 
@@ -23,22 +27,22 @@ static uint32_t alloc_bitmap[BITMAP_WORDS];
 
 static inline uint32_t page_to_index(uintptr_t addr) {
    return (uint32_t)((addr - START_MEMORY) / PAGE);
-}
+}// page_to_index
 
 static inline bool bitmap_is_allocated(uintptr_t addr) {
    uint32_t idx = page_to_index(addr);
    return (alloc_bitmap[idx / 32] & (1U << (idx % 32))) != 0;
-}
+}// bitmap_is_allocated
 
 static inline void bitmap_mark_allocated(uintptr_t addr) {
    uint32_t idx = page_to_index(addr);
    alloc_bitmap[idx / 32] |= (1U << (idx % 32));
-}
+}// bitmap_mark_allocated
 
 static inline void bitmap_mark_free(uintptr_t addr) {
    uint32_t idx = page_to_index(addr);
    alloc_bitmap[idx / 32] &= ~(1U << (idx % 32));
-}
+}// bitmap_mark_free
 
 #ifdef __QEMU__
 uintptr_t get_end_of_memory() {
@@ -132,5 +136,19 @@ uintptr_t allocate_memory() {
 void init_memory() {
    uintptr_t start_memory_rounded = round_page((uint32_t)start_memory, PAGE);
    uintptr_t end_memory = get_end_of_memory();
+#if defined(__x86_64__)
+   if (multiboot_magic == 0x2BADB002 && multiboot_info_ptr) {
+      struct multiboot_info *mbi = (struct multiboot_info *)(uintptr_t)multiboot_info_ptr;
+      if ((mbi->flags & (1 << 3)) && mbi->mods_count > 0 && mbi->mods_addr) {
+         struct multiboot_module *mod = (struct multiboot_module *)(uintptr_t)mbi->mods_addr;
+         for (uint32_t m = 0; m < mbi->mods_count; m++) {
+            uintptr_t mod_end_rounded = round_page(mod[m].mod_end, PAGE);
+            if (mod_end_rounded > start_memory_rounded && mod_end_rounded < end_memory) {
+               start_memory_rounded = mod_end_rounded;
+            }// if
+         }// for
+      }// if
+   }// if
+#endif
    divide_memory(start_memory_rounded, end_memory);
 }// init_memory

@@ -4,8 +4,16 @@
 #include <stdint.h>
 
 #define PAGE 4096
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+#define START_MEMORY 0x00100000
+#define END_MEMORY 0x08000000
+#elif defined(__ARM__) || defined(__arm__) || defined(__aarch64__)
+#define START_MEMORY 0x40000000
+#define END_MEMORY 0x48000000
+#else
 #define START_MEMORY 0x80000000
 #define END_MEMORY 0x88000000
+#endif
 
 #define PTE_V 0x01
 #define PTE_R 0x02
