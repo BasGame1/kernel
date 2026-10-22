@@ -18,7 +18,9 @@ static uint32_t ext2_first_data_block = 1;
 static uint32_t ext2_inodes_count = 0;
 static uint32_t ext2_blocks_count = 0;
 static uint32_t ext2_first_ino = 11;
-static bool     ext2_ready = false;
+bool ext2_ready = false;
+uintptr_t ext2_ramdisk_base = 0;
+size_t ext2_ramdisk_size = 0;
 
 static int ext2_read_block_safe(uint32_t block, void *buffer) {
    if (buffer == NULL || ext2_block_size < 512) {
@@ -1312,6 +1314,18 @@ void ext2_driver_process(void) {
 int ext2_virtio_transfer(uint32_t sector, void *buffer, bool is_write) {
    if (buffer == NULL) {
       return -1;
+   }// if
+   if (ext2_ramdisk_base != 0) {
+      uint64_t offset = (uint64_t)sector * 512;
+      if (offset + 512 > ext2_ramdisk_size) {
+         return -1;
+      }// if
+      if (!is_write) {
+         memcpy(buffer, (const void *)(ext2_ramdisk_base + offset), 512);
+      } else {
+         memcpy((void *)(ext2_ramdisk_base + offset), buffer, 512);
+      }// else
+      return 0;
    }// if
    uint32_t virtio_pid = user_get_pid_by_gid(VIRTIO_GID);
    if (virtio_pid == (uint32_t)-1) {
