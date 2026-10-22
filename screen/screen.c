@@ -4,10 +4,22 @@
 #include "../include/hardware.h"
 #include "../include/gid.h"
 
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+#include "../include/arch_x86.h"
+#endif
+
 void print_character(char *message) {
    if (__builtin_expect(!message, 0)) {
       return;
    }// if
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   const char *p = message;
+   while (*p != '\0') {
+      while ((inb(COM1_PORT + 5) & 0x20) == 0) {
+      }// while
+      outb(COM1_PORT, (uint8_t)*p++);
+   }// while
+#else
    volatile uint8_t *uart_status_pointer = (volatile uint8_t *)UART_STATUS;
    volatile uint8_t *screen_address_pointer = (volatile uint8_t *)SCREEN_ADDRESS;
    const char *p = message;
@@ -21,6 +33,7 @@ void print_character(char *message) {
          *screen_address_pointer = ch;
       }// if
    }// while
+#endif
 }// print_character
 
 void clear_screen() {
@@ -55,6 +68,15 @@ void create_screen_process() {
 }// create_screen_process
 
 void start_screen() {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   outb(COM1_PORT + 1, 0x00);
+   outb(COM1_PORT + 3, 0x80);
+   outb(COM1_PORT + 0, 0x01);
+   outb(COM1_PORT + 1, 0x00);
+   outb(COM1_PORT + 3, 0x03);
+   outb(COM1_PORT + 2, 0xC7);
+   outb(COM1_PORT + 4, 0x0B);
+#endif
    clear_screen();
    print_asccii_art();
 }// start_screen

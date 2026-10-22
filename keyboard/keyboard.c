@@ -6,13 +6,23 @@
 #include "../include/keyboard.h"
 #include "../include/gid.h"
 
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+#include "../include/arch_x86.h"
+#endif
+
 char get_char() {
    volatile char input;
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   while ((inb(COM1_PORT + 5) & 0x01) == 0) {
+   }// while
+   input = (char)inb(COM1_PORT);
+#else
    volatile uint8_t *uart_status_pointer = (volatile uint8_t *)UART_STATUS;
    volatile uint8_t *screen_address_pointer = (volatile uint8_t *)SCREEN_ADDRESS;
    while ((*uart_status_pointer & 0x01) == 0) {
    }// while
    input = (char)*screen_address_pointer;
+#endif
    return input;
 }// get_char
 
@@ -60,8 +70,12 @@ char *get_input() {
 }// get_input
 
 bool test_keyboard() {
+#if defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   return (inb(COM1_PORT + 5) != 0xFF);
+#else
    volatile uint8_t *uart_status_pointer = (volatile uint8_t *)UART_STATUS;
    return (*uart_status_pointer != 0xFF);
+#endif
 }// test_keyboard
 
 void keyboard_driver_process(void) {
