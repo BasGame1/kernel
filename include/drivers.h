@@ -125,6 +125,10 @@ extern int net_stmmac_init(uintptr_t mmio_base, uint8_t mac_out[6]);
 extern int wifi_ipw2200_init(uintptr_t bar_base, uint8_t mac_out[6]);
 extern bool wifi_ipw2200_is_active(void);
 extern void drivers_init(void);
+extern void register_screen_module(void);
+extern void register_keyboard_module(void);
+extern void register_virtio_module(void);
+extern void register_default_fs_module(void);
 
 struct nfc_target;
 struct can_frame;
