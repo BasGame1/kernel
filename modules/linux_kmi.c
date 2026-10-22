@@ -43,7 +43,6 @@ static void linux_spin_lock(struct linux_spinlock *sl) {
       return;
    }// if
    while (__atomic_test_and_set(&sl->lock, __ATOMIC_ACQUIRE)) {
-      /* Spin wait */
    }// while
 }// linux_spin_lock
 
@@ -231,7 +230,6 @@ static int linux_printk(const char *fmt, ...) {
          } else if (fmt[i] == '%') {
             buffer[bidx++] = '%';
          } else {
-            /* Unsupported specifier - emit raw */
             buffer[bidx++] = '%';
             if (bidx < sizeof(buffer) - 1) {
                buffer[bidx++] = fmt[i];
