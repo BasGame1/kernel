@@ -49,7 +49,7 @@ void kcall_analyze(struct trap_frame *frame) {
       }// if check permission
       frame->a0 = kcall_ipc_call(frame->a0, (void *)frame->a1, (void *)frame->a2);
       return;
-   }
+   }// if
    if (kcall_num == KCALL_IPC_SEND) {
       if (current_pid != -1 && !check_gid_permission((uint32_t)current_pid, frame->a0)) {
          errorn("gid not compatible, permission denied");
@@ -58,15 +58,15 @@ void kcall_analyze(struct trap_frame *frame) {
       }// if check permission
       frame->a0 = kcall_ipc_send(frame->a0, (void *)frame->a1);
       return;
-   }
+   }// if
    if (kcall_num == KCALL_IPC_RECV) {
       frame->a0 = kcall_ipc_recv(frame->a0, (void *)frame->a1);
       return;
-   }
+   }// if
    if (kcall_num == KCALL_YIELD) {
       frame->a0 = 0;
       return;
-   }
+   }// if
 
    switch (kcall_num) {
       case PKCALL_MAP_DEVICE: {
@@ -111,7 +111,7 @@ uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr) {
       }// if
       if (dest_pid >= MIN_PID && dest_pid < MAX_PID) {
          direct_handoff_idx = (int)pid_to_slot[dest_pid - MIN_PID];
-      }
+      }// if
       return 0;
    } else {
       curr->state = PROCESS_BLOCKED_SEND;
@@ -172,16 +172,14 @@ uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply) {
       return (uint32_t)-1;
    }// if
 
-   /* Send phase */
    if (dest->state == PROCESS_BLOCKED_RECV) {
       if (dest->ipc_msg_buf && msg) {
          copy_ipc_msg_64(dest->ipc_msg_buf, msg);
-      }
+      }// if
       dest->state = PROCESS_READY;
       if (dest->frame) {
          dest->frame->a0 = (uint32_t)current_pid;
-      }
-      /* OPTIMIZATION: Prioritize server execution immediately */
+      }// if
       if (dest_pid >= MIN_PID && dest_pid < MAX_PID) {
          direct_handoff_idx = (int)pid_to_slot[dest_pid - MIN_PID];
       }// if
@@ -302,6 +300,25 @@ uint32_t user_get_pid_by_gid(uint32_t gid) {
    return (uint32_t)r0;
 }// user_get_pid_by_gid
 #endif
+
+uintptr_t x86_kcall_handler(uintptr_t nr, uintptr_t a0, uintptr_t a1, uintptr_t a2) {
+   switch (nr) {
+      case KCALL_IPC_CALL:
+         return kcall_ipc_call((uint32_t)a0, (void *)a1, (void *)a2);
+      case KCALL_IPC_SEND:
+         return kcall_ipc_send((uint32_t)a0, (void *)a1);
+      case KCALL_IPC_RECV:
+         return kcall_ipc_recv((uint32_t)a0, (void *)a1);
+      case KCALL_YIELD:
+         return 0;
+      case KCALL_GET_PID_BY_GID:
+         return get_pid_by_gid((uint32_t)a0);
+      case PKCALL_MAP_DEVICE:
+         return pkcall_map_device(a0, a1);
+      default:
+         return (uintptr_t)-1;
+   }// switch
+}// x86_kcall_handler
 
 void test_call(void) {
 #if defined(__RISCV__) || defined(__riscv)

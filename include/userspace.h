@@ -162,14 +162,27 @@ extern uint32_t kcall_ipc_send(uint32_t dest_pid, void *message_ptr);
 extern uint32_t kcall_ipc_recv(uint32_t src_pid, void *message_buf);
 extern uint32_t kcall_ipc_call(uint32_t dest_pid, void *msg, void *reply);
 extern void kcall_analyze(struct trap_frame *frame);
+extern uintptr_t x86_kcall_handler(uintptr_t nr, uintptr_t a0, uintptr_t a1, uintptr_t a2);
 
 extern bool check_gid_permission(uint32_t sender_pid, uint32_t receiver_pid);
 extern uint32_t create_process(void *entry, uint32_t gid);
 extern uint32_t get_free_pid(void);
 extern struct process *get_process_by_pid(uint32_t pid);
-extern struct process *get_process_by_frame(void *frame);
 extern struct trap_frame *schedule(struct trap_frame *current_frame);
-extern static inline void invalidate_gid_cache(void)
+static inline void invalidate_gid_cache(void) {
+   gid_cache.valid = false;
+}
+
+static inline struct process *get_process_by_pid_fast(uint32_t pid) {
+   if (pid >= MIN_PID && pid < MAX_PID) {
+      uint8_t slot = pid_to_slot[pid - MIN_PID];
+      if (slot < MAX_PROCESSES && processes[slot].pid == pid && processes[slot].state != PROCESS_UNUSED) {
+         return &processes[slot];
+      }
+   }
+   return NULL;
+}
+
 extern uint32_t user_ipc_send(uint32_t dest_pid, void *message_ptr);
 extern uint32_t user_ipc_recv(uint32_t src_pid, void *message_buf);
 extern uint32_t user_ipc_call(uint32_t dest_pid, void *msg, void *reply);
