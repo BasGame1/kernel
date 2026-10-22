@@ -3,3 +3,53 @@
 var antartica:
    active: 0
    value: none
+
+var for_arch:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_debian:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_ubuntu:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_void:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_manjaro:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_fedora:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_opensuse:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_rocky:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_alpine:
+   depends_on: antartica
+   active: 0
+   value: none
+
+var for_linux:
+   depends_on: antartica
+   active: 0
+   value: none
