@@ -5,6 +5,8 @@
 #include "include/kernel.h"
 #include "include/shell.h"
 #include "include/userspace.h"
+#include "include/linux_service.h"
+#include "include/drivers.h"
 
 uintptr_t mtime = 0;
 uintptr_t mtimemcp = 0;
@@ -113,6 +115,10 @@ extern void kernel_init() {
    #ifdef __USE_ANTARTICA__
       create_antartica_process();
    #endif
+
+   #ifdef __USE_LINUX_MODULES__
+      create_linux_module_process();
+   #endif
    
    infon("Starting userspace");
    userspace_init();
@@ -129,6 +135,9 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
    asm volatile("csrr %0, mcause" : "=r" (cause));
    bool is_hardware = ((intptr_t)cause < 0);
    uint32_t trap_reason = (uint32_t)(cause & 0xFFF);
+#elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+   bool is_hardware = true;
+   uint32_t trap_reason = 7;
 #else
    bool is_hardware = false;
    uint32_t trap_reason = 8;
@@ -143,7 +152,7 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
       if (__builtin_expect(trap_reason == 8 || trap_reason == 9 || trap_reason == 11, 1)) {
          kcall_analyze(frame);
          return schedule(frame);
-      }
+      }// if
       if (exception_handlers[trap_reason]) {
          exception_handlers[trap_reason]();
       } else {
@@ -158,7 +167,7 @@ extern struct trap_frame *trap_handler(struct trap_frame *frame) {
          } else {
             unknown_error();
          }// if
-      }
+      }// if
    }// if hardware
    return schedule(frame);
 }// trap_handler

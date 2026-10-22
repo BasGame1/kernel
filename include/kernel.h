@@ -13,6 +13,8 @@
 #define set_csrs(reg, bit) ((void)0)
 #endif
 #endif
+extern void *memcpy(void *dest, const void *src, size_t n);
+extern void *memset(void *dest, int val, size_t len);
 
 extern uintptr_t mtime;
 extern uintptr_t mtimemcp;
@@ -110,7 +112,7 @@ extern void kreboot();
 extern void reboot();
 
 extern void test_call();
-extern void _enteruserspace(uintptr_t user_stack_top);
+extern void _enteruserspace(uintptr_t entry, uintptr_t user_stack_top);
 
 extern void divide_memory(uintptr_t start, uintptr_t end);
 extern uintptr_t allocate_memory();
