@@ -5,7 +5,7 @@
 #ifndef __ELF_LOADER_H
 #define __ELF_LOADER_H
 
-#if defined(__USE_LINUX_MODULES__)
+#if defined(__USE_LINUX_MODULES__) || defined(__USE_ANTARTICA__)
 
 #if defined(__X86__)
  #define CONFIG_ARCH_X86 1
@@ -31,7 +31,10 @@
  #endif
 #endif
 
-#if defined(__32BIT__) && !defined(__64BIT__)
+#if defined(__USE_ANTARTICA__)
+ #define CONFIG_ELF_32 1
+ #define CONFIG_ELF_64 1
+#elif defined(__32BIT__) && !defined(__64BIT__)
  #define CONFIG_ELF_32 1
  #undef CONFIG_ELF_64
 #elif defined(__64BIT__) && !defined(__32BIT__)
@@ -170,6 +173,24 @@ typedef struct {
 #endif
 
 #if defined(CONFIG_ELF_64)
+
+#define PT_LOAD 1
+#define PT_PHDR 6
+#define PF_X 1
+#define PF_W 2
+#define PF_R 4
+
+typedef struct {
+       uint32_t p_type;
+       uint32_t p_flags;
+       uint64_t p_offset;
+       uint64_t p_vaddr;
+       uint64_t p_paddr;
+       uint64_t p_filesz;
+       uint64_t p_memsz;
+       uint64_t p_align;
+} Elf64_Phdr;
+
 typedef struct {
  uint8_t e_ident[EI_NIDENT];
  uint16_t e_type;
