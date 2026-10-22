@@ -15,7 +15,6 @@
 #define LINUX_SYSCALL_COUNT 467
 #define MAX_LINUX_FDS 32
 
-/* Linux Error Codes */
 #define LINUX_EPERM 1
 #define LINUX_ENOENT 2
 #define LINUX_ESRCH 3
@@ -49,7 +48,6 @@
 #define LINUX_ERANGE 34
 #define LINUX_ENOSYS 38
 
-/* sys calls ids */
 #define SYS_io_setup 0
 #define SYS_io_destroy 1
 #define SYS_io_getevents 2
@@ -374,97 +372,144 @@
 #define SYS_removexattrat 466
 
 struct linux_iovec {
- void *iov_base;
- size_t iov_len;
+   void *iov_base;
+   size_t iov_len;
 };
 
+#if defined(__x86_64__)
 struct linux_stat {
- uint64_t st_dev;
- uint64_t st_ino;
- uint32_t st_mode;
- uint32_t st_nlink;
- uint32_t st_uid;
- uint32_t st_gid;
- uint64_t st_rdev;
- uint64_t __pad1;
- int64_t st_size;
- int32_t st_blksize;
- int32_t __pad2;
- int64_t st_blocks;
- int64_t st_atime;
- uint64_t st_atime_nsec;
- int64_t st_mtime;
- uint64_t st_mtime_nsec;
- int64_t st_ctime;
- uint64_t st_ctime_nsec;
- int32_t __unused[2];
+   uint64_t st_dev;
+   uint64_t st_ino;
+   uint64_t st_nlink;
+   uint32_t st_mode;
+   uint32_t st_uid;
+   uint32_t st_gid;
+   uint32_t __pad0;
+   uint64_t st_rdev;
+   int64_t st_size;
+   int64_t st_blksize;
+   int64_t st_blocks;
+   int64_t st_atime;
+   uint64_t st_atime_nsec;
+   int64_t st_mtime;
+   uint64_t st_mtime_nsec;
+   int64_t st_ctime;
+   uint64_t st_ctime_nsec;
+   int64_t __unused[3];
 };
+#else
+struct linux_stat {
+   uint64_t st_dev;
+   uint64_t st_ino;
+   uint32_t st_mode;
+   uint32_t st_nlink;
+   uint32_t st_uid;
+   uint32_t st_gid;
+   uint64_t st_rdev;
+   uint64_t __pad1;
+   int64_t st_size;
+   int32_t st_blksize;
+   int32_t __pad2;
+   int64_t st_blocks;
+   int64_t st_atime;
+   uint64_t st_atime_nsec;
+   int64_t st_mtime;
+   uint64_t st_mtime_nsec;
+   int64_t st_ctime;
+   uint64_t st_ctime_nsec;
+   int32_t __unused[2];
+};
+#endif
 
 struct linux_utsname {
- char sysname[65];
- char nodename[65];
- char release[65];
- char version[65];
- char machine[65];
- char domainname[65];
+   char sysname[65];
+   char nodename[65];
+   char release[65];
+   char version[65];
+   char machine[65];
+   char domainname[65];
 };
 
 struct linux_sysinfo {
- long uptime;
- unsigned long loads[3];
- unsigned long totalram;
- unsigned long freeram;
- unsigned long sharedram;
- unsigned long bufferram;
- unsigned long totalswap;
- unsigned long freeswap;
- unsigned short procs;
- unsigned short pad;
- unsigned long totalhigh;
- unsigned long freehigh;
- unsigned int mem_unit;
- char _f[20 - 2 * sizeof(long) - sizeof(int)];
+   long uptime;
+   unsigned long loads[3];
+   unsigned long totalram;
+   unsigned long freeram;
+   unsigned long sharedram;
+   unsigned long bufferram;
+   unsigned long totalswap;
+   unsigned long freeswap;
+   unsigned short procs;
+   unsigned short pad;
+   unsigned long totalhigh;
+   unsigned long freehigh;
+   unsigned int mem_unit;
+   char _f[20 - 2 * sizeof(long) - sizeof(int)];
 };
 
 struct linux_timespec {
- long tv_sec;
- long tv_nsec;
+   long tv_sec;
+   long tv_nsec;
 };
 
 struct linux_timeval {
- long tv_sec;
- long tv_usec;
+   long tv_sec;
+   long tv_usec;
 };
 
 struct linux_dirent64 {
- uint64_t d_ino;
- int64_t d_off;
- unsigned short d_reclen;
- unsigned char d_type;
- char d_name[];
+   uint64_t d_ino;
+   int64_t d_off;
+   unsigned short d_reclen;
+   unsigned char d_type;
+   char d_name[];
+};
+
+struct linux_termios {
+   uint32_t c_iflag;
+   uint32_t c_oflag;
+   uint32_t c_cflag;
+   uint32_t c_lflag;
+   uint8_t c_line;
+   uint8_t c_cc[32];
+   uint32_t c_ispeed;
+   uint32_t c_ospeed;
+};
+
+struct linux_pollfd {
+   int fd;
+   short events;
+   short revents;
 };
 
 struct linux_winsize {
- unsigned short ws_row;
- unsigned short ws_col;
- unsigned short ws_xpixel;
- unsigned short ws_ypixel;
+   unsigned short ws_row;
+   unsigned short ws_col;
+   unsigned short ws_xpixel;
+   unsigned short ws_ypixel;
 };
 
 struct linux_file_desc {
- bool in_use;
- int flags;
- uint32_t offset;
- char path[64];
+   bool in_use;
+   int flags;
+   uint32_t offset;
+   char path[64];
 };
 
 typedef long (*linux_syscall_fn)(long a0, long a1, long a2, long a3, long a4, long a5);
 
-extern const linux_syscall_fn linux_syscall_table[LINUX_SYSCALL_COUNT];
+extern linux_syscall_fn linux_syscall_table[LINUX_SYSCALL_COUNT];
+extern uint32_t antartica_elf_exec(const void *elf_bytes, size_t elf_len, char **argv, char **envp);
 
 struct antartica_ipc_req {
-   uint32_t syscall_nr;
+   uint64_t syscall_nr;
    long args[6];
+   uint8_t __pad[64 - sizeof(uint64_t) - 6 * sizeof(long)];
+};
+
+struct antartica_ipc_resp {
+   long status;
+   uint8_t __pad[64 - sizeof(long)];
 };
 
 extern void antartica_process(void);
@@ -472,6 +517,7 @@ extern void create_antartica_process(void);
 
 extern void antartica_init(void);
 extern long antartica_syscall_dispatch(struct trap_frame *frame);
+extern long antartica_x86_syscall(long sc, long a0, long a1, long a2, long a3, long a4, long a5);
 
 extern long sys_ni_syscall(long a0, long a1, long a2, long a3, long a4, long a5);
 extern long sys_read(long fd, long buf, long count, long a3, long a4, long a5);
@@ -512,6 +558,7 @@ extern long sys_clone(long flags, long stack, long ptid, long tls, long ctid, lo
 extern long sys_wait4(long pid, long wstatus, long options, long rusage, long a4, long a5);
 extern long sys_kill(long pid, long sig, long a2, long a3, long a4, long a5);
 extern long sys_set_tid_address(long tidptr, long a1, long a2, long a3, long a4, long a5);
+extern long sys_arch_prctl(long code, long addr, long a2, long a3, long a4, long a5);
 extern long sys_prlimit64(long pid, long resource, long new_limit, long old_limit, long a4, long a5);
 
 extern long sys_rt_sigaction(long signum, long act, long oldact, long sigsetsize, long a4, long a5);
