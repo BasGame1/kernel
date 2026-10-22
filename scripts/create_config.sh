@@ -48,9 +48,13 @@ write_header() {
     if [ "$value" = "0" ] || [ "$value" = "n" ]; then
         echo "$selected_config ignored"
     elif [ "$value" = "1" ] || [ "$value" = "y" ]; then
+        echo "#ifndef __${selected_config_upp}__" >> "$OUT_HEADER"
         echo "#define __${selected_config_upp}__ " >> "$OUT_HEADER"
+        echo "#endif" >> "$OUT_HEADER"
     else
+        echo "#ifndef __${selected_config_upp}__" >> "$OUT_HEADER"
         echo "#define __${selected_config_upp}__ ${value}" >> "$OUT_HEADER"
+        echo "#endif" >> "$OUT_HEADER"
     fi
 }
 generate_seed() {

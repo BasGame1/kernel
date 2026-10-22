@@ -1,3 +1,10 @@
+KNOWN_DISTROS := arch debian ubuntu void manjaro fedora opensuse rocky alpine linux
+
+REQ_DISTRO := $(strip $(DISTRO))
+ifeq ($(REQ_DISTRO),)
+  REQ_DISTRO := $(firstword $(filter $(KNOWN_DISTROS),$(MAKECMDGOALS)))
+endif
+
 ifneq ($(filter x86,$(MAKECMDGOALS)),)
   REQ_ARCH := x86
 else ifneq ($(filter x86_64,$(MAKECMDGOALS)),)
@@ -12,6 +19,13 @@ else ifneq ($(filter riscv64,$(MAKECMDGOALS)),)
   REQ_ARCH := riscv64
 else ifneq ($(strip $(ARCH)),)
   REQ_ARCH := $(strip $(ARCH))
+else ifneq ($(REQ_DISTRO),)
+  REQ_ARCH := x86_64
+endif
+
+ifneq ($(REQ_DISTRO),)
+  UPPER_DISTRO := $(shell echo $(REQ_DISTRO) | tr 'a-z' 'A-Z')
+  CFLAGS_DISTRO := -D__FOR_$(UPPER_DISTRO)__
 endif
 
 CONFIG_EXPLICIT := $(findstring command line,$(origin CONFIG))
@@ -99,7 +113,10 @@ CONFIG_CC := $(shell grep '^[[:space:]]*CC=' $(CONFIG_FILE) 2>/dev/null | head -
 CONFIG_USE_ANTARTICA := $(shell grep '^[[:space:]]*USE_ANTARTICA=' $(CONFIG_FILE) 2>/dev/null | head -n1 | cut -d= -f2 | cut -d' ' -f1 | tr -d '\r')
 ifeq ($(strip $(CONFIG_USE_ANTARTICA)),1)
 ANTARTICA_DIR = antartica
-CFLAGS_ANTARTICA = -D__USE_ANTARTICA__
+CFLAGS_ANTARTICA = -D__USE_ANTARTICA__ $(CFLAGS_DISTRO)
+else ifneq ($(REQ_DISTRO),)
+ANTARTICA_DIR = antartica
+CFLAGS_ANTARTICA = -D__USE_ANTARTICA__ $(CFLAGS_DISTRO)
 else
 ANTARTICA_DIR =
 CFLAGS_ANTARTICA =
@@ -107,14 +124,14 @@ endif
 
 ifeq ($(REQ_ARCH),x86)
   DEF_CC = gcc -m32
-  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m32 -fno-stack-protector -D__X86__ -D__32BIT__ $(CFLAGS_ANTARTICA)
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m32 -fno-stack-protector -no-pie -D__X86__ -D__32BIT__ -D__QEMU__ $(CFLAGS_ANTARTICA)
   DEF_RUST_TARGET = i686-unknown-linux-gnu
   LD_ARCH = i386
   LD_ENTRY = _start_x86
   LD_BASE = 0x00100000
 else ifeq ($(REQ_ARCH),x86_64)
   DEF_CC = gcc
-  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m64 -fno-stack-protector -D__X86__ -D__64BIT__ $(CFLAGS_ANTARTICA)
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -m64 -fno-stack-protector -no-pie -D__X86__ -D__64BIT__ -D__QEMU__ $(CFLAGS_ANTARTICA)
   DEF_RUST_TARGET = x86_64-unknown-none
   LD_ARCH = i386:x86-64
   LD_ENTRY = _start_x86
@@ -157,7 +174,9 @@ else ifeq ($(origin CC),default)
 else
   CC ?= $(DEF_CC)
 endif
+CONFIG_H = $(CURDIR)/include/gen/config.h
 CFLAGS ?= $(DEF_CFLAGS)
+CFLAGS += -include $(CONFIG_H)
 RUST_TARGET ?= $(DEF_RUST_TARGET)
 
 OUT = $(CURDIR)/out
@@ -178,7 +197,6 @@ UPDATE_BIN = $(OUT)/update.bin
 
 NEO_DIR = $(CURDIR)/neo
 NEO_SRC = $(NEO_DIR)/src
-CONFIG_H = $(CURDIR)/include/gen/config.h
 BUNDLE_IMG = $(OUT)/build_bundle.img
 
 LIBNEO = $(NEO_DIR)/target/$(RUST_TARGET)/release/libneo.a
@@ -195,6 +213,7 @@ riscv: all
 riscv64: all
 x86: all
 x86_64: all
+$(KNOWN_DISTROS): all
 
 run: all
 	qemu-system-riscv32 -machine virt -bios none -kernel $(TARGET) -nographic -drive file=disk.img,if=none,format=raw,id=hd0 -global virtio-mmio.force-legacy=false -device virtio-blk-device,drive=hd0
@@ -230,16 +249,16 @@ $(OUT):
 $(OUT_TESTS):
 	mkdir -p $(OUT_TESTS)
 
-dirs: $(OUT)
+dirs: $(OUT) $(CONFIG_H)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
 
 $(OBJECTS): dirs
 	@true
 	
-noshell_dirs: $(OUT)
+noshell_dirs: $(OUT) $(CONFIG_H)
 	@for dir in $(NOSHELL_DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
 
-dirs_with_tests: $(OUT)
+dirs_with_tests: $(OUT) $(CONFIG_H)
 	@for dir in $(DIRS); do $(MAKE) -C $$dir CC="$(CC)" CFLAGS="$(CFLAGS)" OUT=$(OUT) || exit 1; done
 
 $(KERNEL_OBJECT): kernel.c $(CONFIG_H) | $(OUT)
@@ -293,6 +312,9 @@ $(TARGET) $(DEBUG_TARGET) $(NOSHELL_TARGET): $(ALL_OBJECTS) $(GEN_LINKER)
 	else \
 		cp $@ $@.bin; \
 	fi
+	@if [ "$(REQ_ARCH)" = "x86_64" ]; then \
+		objcopy -O elf32-i386 $@ $@32.elf 2>/dev/null || true; \
+	fi
 	@sha256sum $@.bin | awk '{print $$1}' | xxd -r -p > $(NEO_SRC)/kernel.sig
 	@cp $(NEO_SRC)/kernel.sig $(OUT)/kernel.sig
 	@cat $@.bin > $(BUNDLE_IMG)
@@ -311,4 +333,4 @@ clean:
 	cargo clean --manifest-path $(NEO_DIR)/Cargo.toml
 	rm -rf $(OUT)
 
-.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64 neo_prebuild
+.PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64 neo_prebuild $(KNOWN_DISTROS)
