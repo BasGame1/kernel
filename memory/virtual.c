@@ -21,7 +21,60 @@ void map_virtual_memory(uintptr_t *root_dir, uintptr_t virtual_address, uintptr_
       return;
    }// if
 
-#if defined(__64BIT__) || defined(__riscv64) || defined(__aarch64__) || defined(__x86_64__)
+#if defined(__x86_64__)
+   (void)flags;
+   uint64_t vpn3 = (virtual_address >> 39) & 0x1FF;
+   uint64_t vpn2 = (virtual_address >> 30) & 0x1FF;
+   uint64_t vpn1 = (virtual_address >> 21) & 0x1FF;
+   uint64_t vpn0 = (virtual_address >> 12) & 0x1FF;
+
+   uint64_t *pml4 = (uint64_t *)root_dir;
+   if ((pml4[vpn3] & 1) == 0) {
+      uintptr_t pdpt = allocate_memory();
+      if (!pdpt) {
+         return;
+      }// if
+      memset((void *)pdpt, 0, 4096);
+      pml4[vpn3] = (uint64_t)pdpt | 7;
+   }// if
+
+   uint64_t *pdpt = (uint64_t *)(uintptr_t)(pml4[vpn3] & ~0xFFFULL);
+   if ((pdpt[vpn2] & 1) == 0) {
+      uintptr_t pd = allocate_memory();
+      if (!pd) {
+         return;
+      }// if
+      memset((void *)pd, 0, 4096);
+      pdpt[vpn2] = (uint64_t)pd | 7;
+   }// if
+
+   uint64_t *pd = (uint64_t *)(uintptr_t)(pdpt[vpn2] & ~0xFFFULL);
+   if (pd[vpn1] & 0x80) {
+      uintptr_t pt = allocate_memory();
+      if (!pt) {
+         return;
+      }// if
+      uint64_t base_pa = pd[vpn1] & ~0x1FFFFFULL;
+      uint64_t flags_2m = pd[vpn1] & 0xFFF & ~0x80ULL;
+      uint64_t *pt_ptr = (uint64_t *)pt;
+      for (int k = 0; k < 512; k++) {
+         pt_ptr[k] = (base_pa + (uint64_t)k * 4096) | flags_2m;
+      }// for
+      pd[vpn1] = (uint64_t)pt | 7;
+   }// if
+   if ((pd[vpn1] & 1) == 0) {
+      uintptr_t pt = allocate_memory();
+      if (!pt) {
+         return;
+      }// if
+      memset((void *)pt, 0, 4096);
+      pd[vpn1] = (uint64_t)pt | 7;
+   }// if
+
+   uint64_t *pt = (uint64_t *)(uintptr_t)(pd[vpn1] & ~0xFFFULL);
+   pt[vpn0] = (physical_address & ~0xFFFULL) | 7;
+   asm volatile("invlpg (%0)" : : "r"(virtual_address) : "memory");
+#elif defined(__64BIT__) || defined(__riscv64) || defined(__aarch64__)
    uint64_t vpn2 = (virtual_address >> 30) & 0x1FF;
    uint64_t vpn1 = (virtual_address >> 21) & 0x1FF;
    uint64_t vpn0 = (virtual_address >> 12) & 0x1FF;
@@ -75,6 +128,11 @@ void map_virtual_memory(uintptr_t *root_dir, uintptr_t virtual_address, uintptr_
 }// map_virtual_memory
 
 void init_virtual_memory() {
+#if defined(__x86_64__)
+   extern uint64_t pml4_table[512];
+   root_directory = (uintptr_t *)pml4_table;
+   successn("x86_64 virtual memory initialized");
+#else
    root_directory = (uintptr_t *)allocate_memory();
    if (!root_directory) {
       fatal("Failed to allocate root page table");
@@ -119,7 +177,8 @@ void init_virtual_memory() {
       asm volatile("sfence.vma zero, zero");
       successn("Enabled sv32 in the registry");
    #endif
-#elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
+#elif defined(__X86__) || defined(__i386__)
    info("x86 architecture paging initialized");
+#endif
 #endif
 }// init_virtual_memory
