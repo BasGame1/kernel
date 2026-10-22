@@ -56,23 +56,30 @@ _enteruserspace:
        #endif
    #elif defined(__X86__) || defined(__i386__) || defined(__x86_64__)
        #if defined(__x86_64__) || !defined(__32BIT__)
-           mov %rdi, %rsp
+           mov $0x23, %ax
+           mov %ax, %ds
+           mov %ax, %es
+           mov %ax, %fs
+           mov %ax, %gs
+           pushq $0x23
+           pushq %rsi
+           pushq $0x202
+           pushq $0x2B
+           pushq %rdi
            xor %rax, %rax
            xor %rbx, %rbx
            xor %rcx, %rcx
            xor %rdx, %rdx
-           xor %rsi, %rsi
-           xor %rdi, %rdi
            xor %rbp, %rbp
-           xor %r8, %r8
-           xor %r9, %r9
+           xor %r8,  %r8
+           xor %r9,  %r9
            xor %r10, %r10
            xor %r11, %r11
            xor %r12, %r12
            xor %r13, %r13
            xor %r14, %r14
            xor %r15, %r15
-           ret
+           iretq
        #else
            mov 4(%esp), %eax
            mov %eax, %esp
@@ -86,7 +93,13 @@ _enteruserspace:
            ret
        #endif
    #else
+        beqz a1, 1f
+        csrw mepc, a0
+        mv sp, a1
+        j 2f
+   1:
         mv sp, a0
+   2:
         li t0, 3 << 11
         csrc mstatus, t0
         li t0, 1 << 7
