@@ -1,6 +1,6 @@
 .section .text.init
 .global _start_arm
-.type _start_arm, @function
+.type _start_arm, %function
 
 #if defined(__aarch64__) || defined(__64BIT__)
 _start_arm:
