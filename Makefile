@@ -1,3 +1,5 @@
+export PATH := /home/linuxbrew/.linuxbrew/bin:$(PATH)
+
 KNOWN_DISTROS := arch debian ubuntu void manjaro fedora opensuse rocky alpine linux
 
 REQ_DISTRO := $(strip $(DISTRO))
@@ -138,7 +140,7 @@ else ifeq ($(REQ_ARCH),x86_64)
   LD_BASE = 0x00100000
 else ifeq ($(REQ_ARCH),arm)
   DEF_CC = arm-none-eabi-gcc
-  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -D__ARM__ -D__32BIT__ $(CFLAGS_ANTARTICA)
+  DEF_CFLAGS = -fcommon -Wall -Wextra -ffreestanding -nostdlib -fno-stack-protector -march=armv7-a -D__ARM__ -D__32BIT__ $(CFLAGS_ANTARTICA)
   DEF_RUST_TARGET = armv7a-none-eabi
   LD_ARCH = arm
   LD_ENTRY = _start_arm
@@ -176,10 +178,11 @@ else
 endif
 CONFIG_H = $(CURDIR)/include/gen/config.h
 CFLAGS ?= $(DEF_CFLAGS)
-CFLAGS += -include $(CONFIG_H)
+CFLAGS += -I$(CURDIR)/include -include $(CONFIG_H)
 RUST_TARGET ?= $(DEF_RUST_TARGET)
 
 OUT = $(CURDIR)/out
+CONFIG_STAMP = $(OUT)/.config_$(CONFIG)
 OUT_TESTS = $(OUT)/tests
 TARGET = $(OUT)/kernel
 TARGET_TESTS = $(OUT_TESTS)/run_tests
@@ -267,8 +270,13 @@ $(KERNEL_OBJECT): kernel.c $(CONFIG_H) | $(OUT)
 $(OUT_TESTS)/%.o: tests/%.c | $(OUT_TESTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(CONFIG_H): $(CONFIG_FILE) scripts/create_config.sh
+$(CONFIG_H): $(CONFIG_FILE) scripts/create_config.sh $(CONFIG_STAMP)
 	./scripts/create_config.sh $(CONFIG)
+
+$(CONFIG_STAMP): | $(OUT)
+	@rm -f $(OUT)/.config_*
+	@touch $@
+	@rm -f $(CONFIG_H)
 
 $(GEN_LINKER): $(LINKER) $(CONFIG_H) | $(OUT)
 	sed -e 's/OUTPUT_ARCH[[:space:]]*=[[:space:]]*/OUTPUT_ARCH/g' \
@@ -331,6 +339,6 @@ $(TARGET_TESTS): $(TEST_OBJECTS) $(OBJECTS) $(KERNEL_OBJECT) $(LIBNEO) $(GEN_LIN
 clean:
 	@for dir in $(DIRS_ALL); do $(MAKE) -C $$dir clean OUT=$(OUT); done
 	cargo clean --manifest-path $(NEO_DIR)/Cargo.toml
-	rm -rf $(OUT)
+	rm -rf $(OUT) $(CONFIG_H)
 
 .PHONY: all dirs noshell_dirs dirs_with_tests tests clean run debug qemu arch64 noshell arm arm64 riscv riscv64 x86 x86_64 neo_prebuild $(KNOWN_DISTROS)
